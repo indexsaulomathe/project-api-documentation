@@ -140,6 +140,6 @@ vite.config.ts.timestamp-*
 
 
 # doc
-api-doc-chek-list.md
-.api-doc-chek-list.md
-./api-doc-chek-list.md
+api-doc-check-list.md
+.api-doc-check-list.md
+./api-doc-check-list.md
