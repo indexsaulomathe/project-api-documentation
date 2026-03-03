@@ -8,6 +8,7 @@ import { DocumentTypesModule } from './document-types/document-types.module';
 import { EmployeeDocumentTypesModule } from './employee-document-types/employee-document-types.module';
 import { DocumentsModule } from './documents/documents.module';
 import { PendenciesModule } from './pendencies/pendencies.module';
+import { StatisticsModule } from './statistics/statistics.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -22,6 +23,7 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
     EmployeeDocumentTypesModule,
     DocumentsModule,
     PendenciesModule,
+    StatisticsModule,
   ],
   providers: [
     {
