@@ -9,11 +9,7 @@ import { Employee } from '../entities/employee.entity';
 import { CreateEmployeeDto } from '../dto/create-employee.dto';
 import { UpdateEmployeeDto } from '../dto/update-employee.dto';
 import { EmployeeQueryDto } from '../dto/employee-query.dto';
-
-export interface PaginatedResult<T> {
-  data: T[];
-  meta: { total: number; page: number; lastPage: number; limit: number };
-}
+import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
 
 @Injectable()
 export class EmployeesService {

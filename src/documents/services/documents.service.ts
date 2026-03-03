@@ -5,11 +5,7 @@ import { Document, DocumentStatus } from '../entities/document.entity';
 import { Employee } from '../../employees/entities/employee.entity';
 import { SubmitDocumentDto } from '../dto/submit-document.dto';
 import { DocumentQueryDto } from '../dto/document-query.dto';
-
-export interface PaginatedResult<T> {
-  data: T[];
-  meta: { total: number; page: number; lastPage: number; limit: number };
-}
+import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
 
 @Injectable()
 export class DocumentsService {

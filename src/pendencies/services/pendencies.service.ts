@@ -6,11 +6,7 @@ import {
   DocumentStatus,
 } from '../../documents/entities/document.entity';
 import { PendencyQueryDto } from '../dto/pendency-query.dto';
-
-export interface PaginatedResult<T> {
-  data: T[];
-  meta: { total: number; page: number; lastPage: number; limit: number };
-}
+import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
 
 @Injectable()
 export class PendenciesService {

@@ -1,23 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import { IsOptional, IsString, IsUUID } from 'class-validator';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
-export class PendencyQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiPropertyOptional({ default: 10 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number = 10;
-
+export class PendencyQueryDto extends PaginationDto {
   @ApiPropertyOptional({ example: 'uuid-employee' })
   @IsOptional()
   @IsUUID()
