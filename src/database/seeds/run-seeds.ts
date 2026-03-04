@@ -1,4 +1,4 @@
-import { AppDataSource } from '../../../data-source';
+import { AppDataSource } from '../config/data-source';
 import { seedDocumentTypes } from './document-types.seed';
 
 async function runSeeds(): Promise<void> {

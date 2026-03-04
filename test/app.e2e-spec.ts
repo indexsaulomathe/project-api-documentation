@@ -1,25 +1,29 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { App } from 'supertest/types';
-import { AppModule } from './../src/app.module';
+import { DataSource } from 'typeorm';
+import { createTestApp, clearDatabase } from './helpers/create-test-app';
 
-describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
+describe('App (e2e)', () => {
+  let app: INestApplication;
+  let dataSource: DataSource;
 
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    await app.init();
+  beforeAll(async () => {
+    const testApp = await createTestApp();
+    app = testApp.app;
+    dataSource = testApp.dataSource;
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+  afterAll(() => app.close());
+
+  beforeEach(async () => {
+    await clearDatabase(dataSource);
+  });
+
+  it('should return 404 for unknown routes', async () => {
+    await request(app.getHttpServer()).get('/api/v1/unknown-route').expect(404);
+  });
+
+  it('should apply global prefix and versioning', async () => {
+    await request(app.getHttpServer()).get('/employees').expect(404);
   });
 });

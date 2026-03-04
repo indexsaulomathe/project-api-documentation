@@ -7,6 +7,7 @@ import {
   Matches,
   MaxLength,
 } from 'class-validator';
+import { IsCpfValid } from '../../common/validators/cpf.validator';
 
 export class CreateEmployeeDto {
   @ApiProperty({ example: 'John Doe', maxLength: 100 })
@@ -20,13 +21,14 @@ export class CreateEmployeeDto {
   email: string;
 
   @ApiProperty({
-    example: '12345678901',
-    description: 'CPF with 11 digits, numbers only',
+    example: '52998224725',
+    description: 'CPF with 11 digits, numbers only, valid check digits',
   })
   @IsString()
   @Matches(/^\d{11}$/, {
     message: 'CPF must contain exactly 11 numeric digits',
   })
+  @IsCpfValid()
   cpf: string;
 
   @ApiProperty({ example: 'Engineering' })
