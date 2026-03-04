@@ -8,6 +8,11 @@ export class PendencyQueryDto extends PaginationDto {
   @IsUUID()
   employeeId?: string;
 
+  @ApiPropertyOptional({ example: 'uuid-document-type' })
+  @IsOptional()
+  @IsUUID()
+  documentTypeId?: string;
+
   @ApiPropertyOptional({ example: 'Engineering' })
   @IsOptional()
   @IsString()

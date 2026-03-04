@@ -28,6 +28,7 @@ const mockPaginated = {
 const mockService = {
   submit: jest.fn(),
   findByEmployee: jest.fn(),
+  getHistory: jest.fn(),
 };
 
 describe('DocumentsController', () => {
@@ -72,6 +73,32 @@ describe('DocumentsController', () => {
 
       await expect(
         controller.submit('emp-uuid', 'dt-uuid', { fileName: 'f.pdf' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('GET /employees/:employeeId/documents/:documentTypeId/history', () => {
+    it('should call service.getHistory() and return all versions', async () => {
+      const history = [
+        { ...mockDocument, version: 2, isActive: true },
+        { ...mockDocument, id: 'doc-v1', version: 1, isActive: false },
+      ];
+      mockService.getHistory.mockResolvedValue(history);
+
+      const result = await controller.getHistory('emp-uuid', 'dt-uuid');
+
+      expect(mockService.getHistory).toHaveBeenCalledWith(
+        'emp-uuid',
+        'dt-uuid',
+      );
+      expect(result).toHaveLength(2);
+    });
+
+    it('should propagate NotFoundException when no history found', async () => {
+      mockService.getHistory.mockRejectedValue(new NotFoundException());
+
+      await expect(
+        controller.getHistory('emp-uuid', 'dt-uuid'),
       ).rejects.toThrow(NotFoundException);
     });
   });

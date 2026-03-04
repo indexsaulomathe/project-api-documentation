@@ -52,6 +52,7 @@ const mockDataSource = { createQueryRunner: jest.fn() };
 
 const mockDocumentRepository = {
   findOne: jest.fn(),
+  find: jest.fn(),
   createQueryBuilder: jest.fn(),
 };
 
@@ -130,6 +131,47 @@ describe('DocumentsService', () => {
       ).rejects.toThrow('DB error');
       expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+  });
+
+  describe('getHistory()', () => {
+    it('should return all versions ordered by version DESC', async () => {
+      mockEmployeeRepository.findOne.mockResolvedValue(mockEmployee);
+      const history = [
+        { ...mockSubmittedDocument, version: 2, isActive: true },
+        { ...mockActiveDocument, version: 1, isActive: false },
+      ];
+      mockDocumentRepository.find.mockResolvedValue(history);
+
+      const result = await service.getHistory('emp-uuid', 'dt-uuid');
+
+      expect(result).toHaveLength(2);
+      expect(result[0].version).toBe(2);
+      expect(result[1].version).toBe(1);
+      expect(mockDocumentRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { employeeId: 'emp-uuid', documentTypeId: 'dt-uuid' },
+          order: { version: 'DESC' },
+          withDeleted: true,
+        }),
+      );
+    });
+
+    it('should throw NotFoundException when employee not found', async () => {
+      mockEmployeeRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.getHistory('non-existent', 'dt-uuid'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException when no history exists', async () => {
+      mockEmployeeRepository.findOne.mockResolvedValue(mockEmployee);
+      mockDocumentRepository.find.mockResolvedValue([]);
+
+      await expect(service.getHistory('emp-uuid', 'dt-uuid')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

@@ -1,5 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import * as http from 'http';
 
 export const EMPLOYEE_PAYLOAD = {
   name: 'John Doe',
@@ -14,24 +15,28 @@ export const DOCUMENT_TYPE_PAYLOAD = {
   isRequired: true,
 };
 
+interface ApiResponse {
+  data: { id: string };
+}
+
 export async function createEmployee(
   app: INestApplication,
-  payload = EMPLOYEE_PAYLOAD,
+  payload?: Partial<typeof EMPLOYEE_PAYLOAD>,
 ): Promise<string> {
-  const { body } = await request(app.getHttpServer())
+  const res = await request(app.getHttpServer() as http.Server)
     .post('/api/v1/employees')
-    .send(payload);
-  return body.data.id;
+    .send({ ...EMPLOYEE_PAYLOAD, ...payload });
+  return (res.body as ApiResponse).data.id;
 }
 
 export async function createDocumentType(
   app: INestApplication,
-  payload = DOCUMENT_TYPE_PAYLOAD,
+  payload?: Partial<typeof DOCUMENT_TYPE_PAYLOAD>,
 ): Promise<string> {
-  const { body } = await request(app.getHttpServer())
+  const res = await request(app.getHttpServer() as http.Server)
     .post('/api/v1/document-types')
-    .send(payload);
-  return body.data.id;
+    .send({ ...DOCUMENT_TYPE_PAYLOAD, ...payload });
+  return (res.body as ApiResponse).data.id;
 }
 
 export async function linkDocumentType(
@@ -39,7 +44,7 @@ export async function linkDocumentType(
   employeeId: string,
   documentTypeId: string,
 ): Promise<void> {
-  await request(app.getHttpServer())
+  await request(app.getHttpServer() as http.Server)
     .post(`/api/v1/employees/${employeeId}/document-types`)
     .send({ documentTypeId });
 }

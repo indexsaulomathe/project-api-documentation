@@ -11,6 +11,15 @@ const mockStats = {
     submitted: 20,
   },
   complianceRate: 66.67,
+  mostPendingDocumentTypes: [{ name: 'ASO', pendingCount: 10 }],
+  latestSubmissions: [
+    {
+      employeeName: 'John Doe',
+      department: 'Engineering',
+      documentTypeName: 'CPF',
+      submittedAt: new Date(),
+    },
+  ],
 };
 
 const mockService = {

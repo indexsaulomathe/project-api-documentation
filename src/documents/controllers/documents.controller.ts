@@ -44,6 +44,20 @@ export class DocumentsController {
     return this.documentsService.submit(employeeId, documentTypeId, dto);
   }
 
+  @Get(':employeeId/documents/:documentTypeId/history')
+  @ApiOperation({ summary: 'Get version history for a document type' })
+  @ApiResponse({
+    status: 200,
+    description: 'All versions ordered by version DESC',
+  })
+  @ApiNotFoundResponse({ description: 'Employee not found or no history' })
+  getHistory(
+    @Param('employeeId', ParseUUIDPipe) employeeId: string,
+    @Param('documentTypeId', ParseUUIDPipe) documentTypeId: string,
+  ) {
+    return this.documentsService.getHistory(employeeId, documentTypeId);
+  }
+
   @Get(':employeeId/documents')
   @ApiOperation({ summary: 'List active documents for an employee' })
   @ApiResponse({ status: 200, description: 'Paginated list of documents' })

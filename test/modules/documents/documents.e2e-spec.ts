@@ -84,10 +84,52 @@ describe('Documents (e2e)', () => {
       });
 
       const { body } = await request(app.getHttpServer())
-        .post(
-          `/api/v1/employees/${employeeId}/documents/${unlinkedDocTypeId}`,
-        )
+        .post(`/api/v1/employees/${employeeId}/documents/${unlinkedDocTypeId}`)
         .send({ fileName: 'rg.pdf' })
+        .expect(404);
+
+      expect(body.statusCode).toBe(404);
+    });
+  });
+
+  describe('GET /api/v1/employees/:employeeId/documents/:documentTypeId/history', () => {
+    it('should return all versions ordered by version DESC', async () => {
+      await request(app.getHttpServer())
+        .post(`/api/v1/employees/${employeeId}/documents/${documentTypeId}`)
+        .send({ fileName: 'cpf-v2.pdf' });
+
+      const { body } = await request(app.getHttpServer())
+        .get(
+          `/api/v1/employees/${employeeId}/documents/${documentTypeId}/history`,
+        )
+        .expect(200);
+
+      expect(body.success).toBe(true);
+      expect(body.data).toHaveLength(2);
+      expect(body.data[0].version).toBe(2);
+      expect(body.data[0].status).toBe('submitted');
+      expect(body.data[1].version).toBe(1);
+      expect(body.data[1].status).toBe('pending');
+    });
+
+    it('should return 404 when employee not found', async () => {
+      const { body } = await request(app.getHttpServer())
+        .get(
+          `/api/v1/employees/a1b2c3d4-e5f6-7890-abcd-ef1234567890/documents/${documentTypeId}/history`,
+        )
+        .expect(404);
+
+      expect(body.statusCode).toBe(404);
+    });
+
+    it('should return 404 when no history exists for the document type', async () => {
+      const unlinkedId = await createDocumentType(app, {
+        name: 'RG',
+        isRequired: false,
+      });
+
+      const { body } = await request(app.getHttpServer())
+        .get(`/api/v1/employees/${employeeId}/documents/${unlinkedId}/history`)
         .expect(404);
 
       expect(body.statusCode).toBe(404);

@@ -68,6 +68,32 @@ export class DocumentsService {
     }
   }
 
+  async getHistory(
+    employeeId: string,
+    documentTypeId: string,
+  ): Promise<Document[]> {
+    const employee = await this.employeeRepository.findOne({
+      where: { id: employeeId, deletedAt: IsNull() },
+    });
+    if (!employee) {
+      throw new NotFoundException(`Employee with id ${employeeId} not found`);
+    }
+
+    const history = await this.documentRepository.find({
+      where: { employeeId, documentTypeId },
+      order: { version: 'DESC' },
+      withDeleted: true,
+    });
+
+    if (!history.length) {
+      throw new NotFoundException(
+        'No document history found for this employee and document type',
+      );
+    }
+
+    return history;
+  }
+
   async findByEmployee(
     employeeId: string,
     query: DocumentQueryDto,

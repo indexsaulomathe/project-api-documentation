@@ -8,6 +8,18 @@ import {
   DocumentStatus,
 } from '../../documents/entities/document.entity';
 
+export interface MostPendingDocumentType {
+  name: string;
+  pendingCount: number;
+}
+
+export interface LatestSubmission {
+  employeeName: string;
+  department: string;
+  documentTypeName: string;
+  submittedAt: Date;
+}
+
 export interface StatsResult {
   totalEmployees: number;
   totalDocumentTypes: number;
@@ -17,6 +29,8 @@ export interface StatsResult {
     submitted: number;
   };
   complianceRate: number;
+  mostPendingDocumentTypes: MostPendingDocumentType[];
+  latestSubmissions: LatestSubmission[];
 }
 
 @Injectable()
@@ -36,6 +50,8 @@ export class StatisticsService {
       totalDocumentTypes,
       pendingDocuments,
       submittedDocuments,
+      mostPendingDocumentTypes,
+      latestSubmissions,
     ] = await Promise.all([
       this.employeeRepository.count({ where: { deletedAt: IsNull() } }),
       this.docTypeRepository.count({ where: { deletedAt: IsNull() } }),
@@ -53,6 +69,8 @@ export class StatisticsService {
           deletedAt: IsNull(),
         },
       }),
+      this.getMostPendingDocumentTypes(),
+      this.getLatestSubmissions(),
     ]);
 
     const total = pendingDocuments + submittedDocuments;
@@ -70,6 +88,49 @@ export class StatisticsService {
         submitted: submittedDocuments,
       },
       complianceRate,
+      mostPendingDocumentTypes,
+      latestSubmissions,
     };
+  }
+
+  private async getMostPendingDocumentTypes(): Promise<
+    MostPendingDocumentType[]
+  > {
+    const raw = await this.documentRepository
+      .createQueryBuilder('document')
+      .select('documentType.name', 'name')
+      .addSelect('COUNT(document.id)', 'pendingCount')
+      .innerJoin('document.documentType', 'documentType')
+      .where('document.status = :status', { status: DocumentStatus.PENDING })
+      .andWhere('document.isActive = true')
+      .andWhere('document.deletedAt IS NULL')
+      .groupBy('documentType.id')
+      .addGroupBy('documentType.name')
+      .orderBy('COUNT(document.id)', 'DESC')
+      .limit(5)
+      .getRawMany<{ name: string; pendingCount: string }>();
+
+    return raw.map((r) => ({
+      name: r.name,
+      pendingCount: Number(r.pendingCount),
+    }));
+  }
+
+  private async getLatestSubmissions(): Promise<LatestSubmission[]> {
+    return this.documentRepository
+      .createQueryBuilder('document')
+      .select('employee.name', 'employeeName')
+      .addSelect('employee.department', 'department')
+      .addSelect('documentType.name', 'documentTypeName')
+      .addSelect('document.submittedAt', 'submittedAt')
+      .innerJoin('document.employee', 'employee')
+      .innerJoin('document.documentType', 'documentType')
+      .where('document.status = :status', { status: DocumentStatus.SUBMITTED })
+      .andWhere('document.isActive = true')
+      .andWhere('document.deletedAt IS NULL')
+      .andWhere('employee.deletedAt IS NULL')
+      .orderBy('document.submittedAt', 'DESC')
+      .limit(10)
+      .getRawMany<LatestSubmission>();
   }
 }
