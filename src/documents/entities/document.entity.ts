@@ -33,6 +33,9 @@ export class Document extends BaseEntity {
   @Column({ type: 'varchar', nullable: true })
   fileName: string | null;
 
+  @Column({ type: 'varchar', nullable: true })
+  storageKey: string | null;
+
   @Column({ nullable: true, type: 'timestamptz' })
   submittedAt: Date | null;
 

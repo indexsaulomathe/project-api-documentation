@@ -3,8 +3,10 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { DocumentsService } from './documents.service';
+import { IUploadedFile } from '../interfaces/uploaded-file.interface';
 import { Document, DocumentStatus } from '../entities/document.entity';
 import { Employee } from '../../employees/entities/employee.entity';
+import { StorageService } from '../../storage/storage.service';
 
 const mockEmployee = { id: 'emp-uuid', name: 'John Doe', deletedAt: null };
 
@@ -16,6 +18,7 @@ const mockActiveDocument = {
   isActive: true,
   status: DocumentStatus.PENDING,
   fileName: null,
+  storageKey: null,
   submittedAt: null,
   deletedAt: null,
 };
@@ -27,7 +30,14 @@ const mockSubmittedDocument = {
   status: DocumentStatus.SUBMITTED,
   isActive: true,
   fileName: 'cpf-joao.pdf',
+  storageKey: 'emp-uuid/dt-uuid/v2/cpf-joao.pdf',
   submittedAt: new Date(),
+};
+
+const mockFile: IUploadedFile = {
+  originalname: 'cpf-joao.pdf',
+  mimetype: 'application/pdf',
+  buffer: Buffer.from('pdf content'),
 };
 
 interface QueryRunnerMock {
@@ -58,12 +68,24 @@ const mockDocumentRepository = {
 
 const mockEmployeeRepository = { findOne: jest.fn() };
 
+const mockStorageService = {
+  buildKey: jest.fn().mockReturnValue('emp-uuid/dt-uuid/v2/cpf-joao.pdf'),
+  upload: jest.fn().mockResolvedValue('emp-uuid/dt-uuid/v2/cpf-joao.pdf'),
+  getSignedDownloadUrl: jest.fn().mockResolvedValue('https://signed.url/file'),
+};
+
 describe('DocumentsService', () => {
   let service: DocumentsService;
 
   beforeEach(async () => {
     jest.clearAllMocks();
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    mockStorageService.buildKey.mockReturnValue(
+      'emp-uuid/dt-uuid/v2/cpf-joao.pdf',
+    );
+    mockStorageService.upload.mockResolvedValue(
+      'emp-uuid/dt-uuid/v2/cpf-joao.pdf',
+    );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -77,6 +99,7 @@ describe('DocumentsService', () => {
           useValue: mockEmployeeRepository,
         },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: StorageService, useValue: mockStorageService },
       ],
     }).compile();
 
@@ -84,17 +107,26 @@ describe('DocumentsService', () => {
   });
 
   describe('submit()', () => {
-    it('should deactivate current doc and create new version in a transaction', async () => {
+    it('should upload file, deactivate current doc and create new version in a transaction', async () => {
       mockEmployeeRepository.findOne.mockResolvedValue(mockEmployee);
       mockDocumentRepository.findOne.mockResolvedValue(mockActiveDocument);
       mockQueryRunner.manager.save
         .mockResolvedValueOnce({ ...mockActiveDocument, isActive: false })
         .mockResolvedValueOnce(mockSubmittedDocument);
 
-      const result = await service.submit('emp-uuid', 'dt-uuid', {
-        fileName: 'cpf-joao.pdf',
-      });
+      const result = await service.submit('emp-uuid', 'dt-uuid', mockFile);
 
+      expect(mockStorageService.buildKey).toHaveBeenCalledWith(
+        'emp-uuid',
+        'dt-uuid',
+        2,
+        'cpf-joao.pdf',
+      );
+      expect(mockStorageService.upload).toHaveBeenCalledWith(
+        'emp-uuid/dt-uuid/v2/cpf-joao.pdf',
+        mockFile.buffer,
+        'application/pdf',
+      );
       expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(2);
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
@@ -106,8 +138,9 @@ describe('DocumentsService', () => {
       mockEmployeeRepository.findOne.mockResolvedValue(null);
 
       await expect(
-        service.submit('non-existent', 'dt-uuid', { fileName: 'f.pdf' }),
+        service.submit('non-existent', 'dt-uuid', mockFile),
       ).rejects.toThrow(NotFoundException);
+      expect(mockStorageService.upload).not.toHaveBeenCalled();
       expect(mockQueryRunner.startTransaction).not.toHaveBeenCalled();
     });
 
@@ -116,21 +149,65 @@ describe('DocumentsService', () => {
       mockDocumentRepository.findOne.mockResolvedValue(null);
 
       await expect(
-        service.submit('emp-uuid', 'dt-uuid', { fileName: 'f.pdf' }),
+        service.submit('emp-uuid', 'dt-uuid', mockFile),
       ).rejects.toThrow(NotFoundException);
+      expect(mockStorageService.upload).not.toHaveBeenCalled();
       expect(mockQueryRunner.startTransaction).not.toHaveBeenCalled();
     });
 
-    it('should rollback transaction and rethrow on error', async () => {
+    it('should rollback transaction and rethrow on save error', async () => {
       mockEmployeeRepository.findOne.mockResolvedValue(mockEmployee);
       mockDocumentRepository.findOne.mockResolvedValue(mockActiveDocument);
       mockQueryRunner.manager.save.mockRejectedValue(new Error('DB error'));
 
       await expect(
-        service.submit('emp-uuid', 'dt-uuid', { fileName: 'f.pdf' }),
+        service.submit('emp-uuid', 'dt-uuid', mockFile),
       ).rejects.toThrow('DB error');
       expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+  });
+
+  describe('getDownloadUrl()', () => {
+    it('should return a signed URL for the active document', async () => {
+      mockEmployeeRepository.findOne.mockResolvedValue(mockEmployee);
+      mockDocumentRepository.findOne.mockResolvedValue(mockSubmittedDocument);
+
+      const url = await service.getDownloadUrl('emp-uuid', 'dt-uuid');
+
+      expect(mockStorageService.getSignedDownloadUrl).toHaveBeenCalledWith(
+        mockSubmittedDocument.storageKey,
+      );
+      expect(url).toBe('https://signed.url/file');
+    });
+
+    it('should throw NotFoundException when employee not found', async () => {
+      mockEmployeeRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.getDownloadUrl('non-existent', 'dt-uuid'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException when no active document exists', async () => {
+      mockEmployeeRepository.findOne.mockResolvedValue(mockEmployee);
+      mockDocumentRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.getDownloadUrl('emp-uuid', 'dt-uuid'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException when active document has no storageKey', async () => {
+      mockEmployeeRepository.findOne.mockResolvedValue(mockEmployee);
+      mockDocumentRepository.findOne.mockResolvedValue({
+        ...mockActiveDocument,
+        storageKey: null,
+      });
+
+      await expect(
+        service.getDownloadUrl('emp-uuid', 'dt-uuid'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

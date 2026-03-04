@@ -3,9 +3,10 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, IsNull, Repository } from 'typeorm';
 import { Document, DocumentStatus } from '../entities/document.entity';
 import { Employee } from '../../employees/entities/employee.entity';
-import { SubmitDocumentDto } from '../dto/submit-document.dto';
 import { DocumentQueryDto } from '../dto/document-query.dto';
 import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
+import { StorageService } from '../../storage/storage.service';
+import { IUploadedFile } from '../interfaces/uploaded-file.interface';
 
 @Injectable()
 export class DocumentsService {
@@ -16,12 +17,13 @@ export class DocumentsService {
     private readonly employeeRepository: Repository<Employee>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly storageService: StorageService,
   ) {}
 
   async submit(
     employeeId: string,
     documentTypeId: string,
-    dto: SubmitDocumentDto,
+    file: IUploadedFile,
   ): Promise<Document> {
     const employee = await this.employeeRepository.findOne({
       where: { id: employeeId, deletedAt: IsNull() },
@@ -44,6 +46,20 @@ export class DocumentsService {
       );
     }
 
+    const newVersion = current.version + 1;
+    const storageKey = this.storageService.buildKey(
+      employeeId,
+      documentTypeId,
+      newVersion,
+      file.originalname,
+    );
+    await this.storageService.upload(
+      storageKey,
+      file.buffer,
+      file.mimetype,
+      file.originalname,
+    );
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -52,10 +68,11 @@ export class DocumentsService {
       const newDoc = await queryRunner.manager.save(Document, {
         employeeId,
         documentTypeId,
-        version: current.version + 1,
+        version: newVersion,
         status: DocumentStatus.SUBMITTED,
         isActive: true,
-        fileName: dto.fileName,
+        fileName: file.originalname,
+        storageKey,
         submittedAt: new Date(),
       });
       await queryRunner.commitTransaction();
@@ -66,6 +83,39 @@ export class DocumentsService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async getDownloadUrl(
+    employeeId: string,
+    documentTypeId: string,
+  ): Promise<string> {
+    const employee = await this.employeeRepository.findOne({
+      where: { id: employeeId, deletedAt: IsNull() },
+    });
+    if (!employee) {
+      throw new NotFoundException(`Employee with id ${employeeId} not found`);
+    }
+
+    const doc = await this.documentRepository.findOne({
+      where: {
+        employeeId,
+        documentTypeId,
+        isActive: true,
+        deletedAt: IsNull(),
+      },
+    });
+    if (!doc) {
+      throw new NotFoundException(
+        'No active document found for this employee and document type',
+      );
+    }
+    if (!doc.storageKey) {
+      throw new NotFoundException(
+        'No file has been uploaded for this document yet',
+      );
+    }
+
+    return this.storageService.getSignedDownloadUrl(doc.storageKey);
   }
 
   async getHistory(

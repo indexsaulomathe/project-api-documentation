@@ -9,6 +9,7 @@ import { EmployeeDocumentTypesModule } from './employee-document-types/employee-
 import { DocumentsModule } from './documents/documents.module';
 import { PendenciesModule } from './pendencies/pendencies.module';
 import { StatisticsModule } from './statistics/statistics.module';
+import { StorageModule } from './storage/storage.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -24,6 +25,7 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
     DocumentsModule,
     PendenciesModule,
     StatisticsModule,
+    StorageModule,
   ],
   providers: [
     {

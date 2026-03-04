@@ -1,15 +1,27 @@
 import {
-  Body,
   Controller,
+  FileTypeValidator,
   Get,
   HttpCode,
   HttpStatus,
+  MaxFileSizeValidator,
   Param,
+  ParseFilePipe,
   ParseUUIDPipe,
   Post,
   Query,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
+  ACCEPTED_TYPES_LABEL,
+  ALLOWED_MIME_TYPES_REGEX,
+  MAX_UPLOAD_BYTES,
+} from '../dto/allowed-mime-types.enum';
+import {
+  ApiConsumes,
+  ApiBody,
   ApiNotFoundResponse,
   ApiOperation,
   ApiQuery,
@@ -17,7 +29,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { DocumentsService } from '../services/documents.service';
-import { SubmitDocumentDto } from '../dto/submit-document.dto';
+import { IUploadedFile } from '../interfaces/uploaded-file.interface';
 import { DocumentQueryDto } from '../dto/document-query.dto';
 import { DocumentStatus } from '../entities/document.entity';
 
@@ -28,10 +40,29 @@ export class DocumentsController {
 
   @Post(':employeeId/documents/:documentTypeId')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Submit a document (creates a new version)' })
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: ACCEPTED_TYPES_LABEL,
+        },
+      },
+    },
+  })
+  @ApiOperation({ summary: 'Upload a document file (creates a new version)' })
   @ApiResponse({
     status: 201,
-    description: 'Document submitted and new version created',
+    description: 'Document uploaded and new version created',
+  })
+  @ApiResponse({
+    status: 400,
+    description: `Invalid file type or size. Accepted: ${ACCEPTED_TYPES_LABEL}`,
   })
   @ApiNotFoundResponse({
     description: 'Employee not found or no active document',
@@ -39,9 +70,30 @@ export class DocumentsController {
   submit(
     @Param('employeeId', ParseUUIDPipe) employeeId: string,
     @Param('documentTypeId', ParseUUIDPipe) documentTypeId: string,
-    @Body() dto: SubmitDocumentDto,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: MAX_UPLOAD_BYTES }),
+          new FileTypeValidator({ fileType: ALLOWED_MIME_TYPES_REGEX }),
+        ],
+      }),
+    )
+    file: IUploadedFile,
   ) {
-    return this.documentsService.submit(employeeId, documentTypeId, dto);
+    return this.documentsService.submit(employeeId, documentTypeId, file);
+  }
+
+  @Get(':employeeId/documents/:documentTypeId/download')
+  @ApiOperation({
+    summary: 'Get a signed download URL for the active document',
+  })
+  @ApiResponse({ status: 200, description: 'Signed URL (valid 1 hour)' })
+  @ApiNotFoundResponse({ description: 'Employee, document, or file not found' })
+  download(
+    @Param('employeeId', ParseUUIDPipe) employeeId: string,
+    @Param('documentTypeId', ParseUUIDPipe) documentTypeId: string,
+  ) {
+    return this.documentsService.getDownloadUrl(employeeId, documentTypeId);
   }
 
   @Get(':employeeId/documents/:documentTypeId/history')
