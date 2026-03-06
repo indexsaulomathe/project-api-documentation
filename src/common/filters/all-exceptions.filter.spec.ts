@@ -1,9 +1,11 @@
 import { NotFoundException } from '@nestjs/common';
 import { AllExceptionsFilter } from './all-exceptions.filter';
+import { PinoLogger } from 'nestjs-pino';
 import { QueryFailedError } from 'typeorm';
 
 describe('AllExceptionsFilter', () => {
   let filter: AllExceptionsFilter;
+  let mockPinoLogger: { error: jest.Mock };
   let mockResponse: { status: jest.Mock; json: jest.Mock };
   let mockRequest: { url: string };
   let mockHost: {
@@ -16,8 +18,8 @@ describe('AllExceptionsFilter', () => {
   const originalEnv = process.env.NODE_ENV;
 
   beforeEach(() => {
-    filter = new AllExceptionsFilter();
-    jest.spyOn(filter['logger'], 'error').mockImplementation(() => undefined);
+    mockPinoLogger = { error: jest.fn() };
+    filter = new AllExceptionsFilter(mockPinoLogger as unknown as PinoLogger);
 
     mockResponse = {
       status: jest.fn().mockReturnThis(),
@@ -58,7 +60,10 @@ describe('AllExceptionsFilter', () => {
   it('should log the internal error for debugging', () => {
     const error = new Error('some error');
     filter.catch(error, mockHost as any);
-    expect(filter['logger'].error).toHaveBeenCalled();
+    expect(mockPinoLogger.error).toHaveBeenCalledWith(
+      expect.objectContaining({ err: error }),
+      expect.any(String),
+    );
   });
 
   it('should delegate to HttpException when exception is HttpException', () => {

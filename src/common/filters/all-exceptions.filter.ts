@@ -3,14 +3,17 @@ import {
   Catch,
   ExceptionFilter,
   HttpException,
-  Logger,
 } from '@nestjs/common';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Request, Response } from 'express';
 import { QueryFailedError } from 'typeorm';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  private readonly logger = new Logger(AllExceptionsFilter.name);
+  constructor(
+    @InjectPinoLogger(AllExceptionsFilter.name)
+    private readonly logger: PinoLogger,
+  ) {}
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
@@ -24,8 +27,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (exception instanceof QueryFailedError) {
       this.logger.error(
+        { err: exception },
         `QueryFailedError: ${exception.message}`,
-        exception.stack,
       );
 
       const pgError = exception as QueryFailedError & { code?: string };
@@ -52,8 +55,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     this.logger.error(
+      { err: exception },
       `Unhandled exception: ${(exception as Error)?.message}`,
-      (exception as Error)?.stack,
     );
 
     const isProduction = process.env.NODE_ENV === 'production';
