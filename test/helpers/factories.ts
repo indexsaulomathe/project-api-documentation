@@ -22,20 +22,26 @@ interface ApiResponse {
 export async function createEmployee(
   app: INestApplication,
   payload?: Partial<typeof EMPLOYEE_PAYLOAD>,
+  token?: string,
 ): Promise<string> {
-  const res = await request(app.getHttpServer() as http.Server)
+  const req = request(app.getHttpServer() as http.Server)
     .post('/api/v1/employees')
     .send({ ...EMPLOYEE_PAYLOAD, ...payload });
+  if (token) req.set('Authorization', `Bearer ${token}`);
+  const res = await req;
   return (res.body as ApiResponse).data.id;
 }
 
 export async function createDocumentType(
   app: INestApplication,
   payload?: Partial<typeof DOCUMENT_TYPE_PAYLOAD>,
+  token?: string,
 ): Promise<string> {
-  const res = await request(app.getHttpServer() as http.Server)
+  const req = request(app.getHttpServer() as http.Server)
     .post('/api/v1/document-types')
     .send({ ...DOCUMENT_TYPE_PAYLOAD, ...payload });
+  if (token) req.set('Authorization', `Bearer ${token}`);
+  const res = await req;
   return (res.body as ApiResponse).data.id;
 }
 
@@ -43,8 +49,11 @@ export async function linkDocumentType(
   app: INestApplication,
   employeeId: string,
   documentTypeId: string,
+  token?: string,
 ): Promise<void> {
-  await request(app.getHttpServer() as http.Server)
+  const req = request(app.getHttpServer() as http.Server)
     .post(`/api/v1/employees/${employeeId}/document-types`)
     .send({ documentTypeId });
+  if (token) req.set('Authorization', `Bearer ${token}`);
+  await req;
 }
