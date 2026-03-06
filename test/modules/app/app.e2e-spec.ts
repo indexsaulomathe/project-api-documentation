@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
-import { createTestApp, clearDatabase } from './helpers/create-test-app';
+import { createTestApp, clearDatabase } from '../../helpers/create-test-app';
 
 describe('App (e2e)', () => {
   let app: INestApplication;
