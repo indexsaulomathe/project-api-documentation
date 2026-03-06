@@ -36,13 +36,15 @@ async function bootstrap() {
     .setDescription('API for employee document management')
     .setVersion('1.0')
     .addBearerAuth()
+    .addTag('auth', 'Authentication')
     .addTag('employees', 'Employee management')
     .addTag('document-types', 'Document types')
     .addTag('documents', 'Document submission and versioning')
-    .addTag('pending', 'Pending documents')
-    .addTag('stats', 'General statistics')
-    .addTag('auth', 'Authentication')
+    .addTag('employee-document-types', 'Link document types to employees')
+    .addTag('pendencies', 'Pending documents')
+    .addTag('statistics', 'General statistics')
     .addTag('health', 'Health check')
+    .addTag('metrics', 'Prometheus metrics endpoint')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
