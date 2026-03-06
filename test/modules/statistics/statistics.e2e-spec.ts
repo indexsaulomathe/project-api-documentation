@@ -11,11 +11,13 @@ import {
 describe('Statistics (e2e)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
+  let adminToken: string;
 
   beforeAll(async () => {
     const testApp = await createTestApp();
     app = testApp.app;
     dataSource = testApp.dataSource;
+    adminToken = testApp.adminToken;
   });
 
   afterAll(() => app.close());
@@ -28,6 +30,7 @@ describe('Statistics (e2e)', () => {
     it('should return zero statistics with empty arrays when database is empty', async () => {
       const { body } = await request(app.getHttpServer())
         .get('/api/v1/statistics')
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(body.success).toBe(true);
@@ -44,12 +47,17 @@ describe('Statistics (e2e)', () => {
     });
 
     it('should return mostPendingDocumentTypes after linking', async () => {
-      const employeeId = await createEmployee(app);
-      const documentTypeId = await createDocumentType(app);
-      await linkDocumentType(app, employeeId, documentTypeId);
+      const employeeId = await createEmployee(app, undefined, adminToken);
+      const documentTypeId = await createDocumentType(
+        app,
+        undefined,
+        adminToken,
+      );
+      await linkDocumentType(app, employeeId, documentTypeId, adminToken);
 
       const { body } = await request(app.getHttpServer())
         .get('/api/v1/statistics')
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(body.data.totalEmployees).toBe(1);
@@ -68,16 +76,25 @@ describe('Statistics (e2e)', () => {
     });
 
     it('should return latestSubmissions and complianceRate of 100 after submission', async () => {
-      const employeeId = await createEmployee(app);
-      const documentTypeId = await createDocumentType(app);
-      await linkDocumentType(app, employeeId, documentTypeId);
+      const employeeId = await createEmployee(app, undefined, adminToken);
+      const documentTypeId = await createDocumentType(
+        app,
+        undefined,
+        adminToken,
+      );
+      await linkDocumentType(app, employeeId, documentTypeId, adminToken);
 
       await request(app.getHttpServer())
         .post(`/api/v1/employees/${employeeId}/documents/${documentTypeId}`)
-        .send({ fileName: 'cpf.pdf' });
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('file', Buffer.from('%PDF-1.4 test'), {
+          filename: 'cpf.pdf',
+          contentType: 'application/pdf',
+        });
 
       const { body } = await request(app.getHttpServer())
         .get('/api/v1/statistics')
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(body.data.documents).toMatchObject({
