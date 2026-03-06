@@ -11,7 +11,7 @@ import { QueryFailedError } from 'typeorm';
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   constructor(
-    @InjectPinoLogger(AllExceptionsFilter.name)
+    @InjectPinoLogger()
     private readonly logger: PinoLogger,
   ) {}
 
