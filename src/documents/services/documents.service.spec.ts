@@ -63,6 +63,7 @@ const mockDataSource = { createQueryRunner: jest.fn() };
 const mockDocumentRepository = {
   findOne: jest.fn(),
   find: jest.fn(),
+  findAndCount: jest.fn(),
   createQueryBuilder: jest.fn(),
 };
 
@@ -126,9 +127,17 @@ describe('DocumentsService', () => {
         'emp-uuid/dt-uuid/v2/cpf-joao.pdf',
         mockFile.buffer,
         'application/pdf',
+        'cpf-joao.pdf',
       );
       expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
-      expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(2);
+      expect(mockQueryRunner.manager.save).toHaveBeenNthCalledWith(
+        2,
+        Document,
+        expect.objectContaining({
+          fileSize: mockFile.buffer.length,
+          contentType: 'application/pdf',
+        }),
+      );
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.release).toHaveBeenCalled();
       expect(result).toEqual(mockSubmittedDocument);
@@ -212,24 +221,34 @@ describe('DocumentsService', () => {
   });
 
   describe('getHistory()', () => {
-    it('should return all versions ordered by version DESC', async () => {
+    it('should return paginated versions ordered by version DESC', async () => {
       mockEmployeeRepository.findOne.mockResolvedValue(mockEmployee);
       const history = [
         { ...mockSubmittedDocument, version: 2, isActive: true },
         { ...mockActiveDocument, version: 1, isActive: false },
       ];
-      mockDocumentRepository.find.mockResolvedValue(history);
+      mockDocumentRepository.findAndCount.mockResolvedValue([history, 2]);
 
-      const result = await service.getHistory('emp-uuid', 'dt-uuid');
+      const result = await service.getHistory('emp-uuid', 'dt-uuid', {
+        page: 1,
+        limit: 10,
+      });
 
-      expect(result).toHaveLength(2);
-      expect(result[0].version).toBe(2);
-      expect(result[1].version).toBe(1);
-      expect(mockDocumentRepository.find).toHaveBeenCalledWith(
+      expect(result.data).toHaveLength(2);
+      expect(result.data[0].version).toBe(2);
+      expect(result.meta).toMatchObject({
+        total: 2,
+        page: 1,
+        lastPage: 1,
+        limit: 10,
+      });
+      expect(mockDocumentRepository.findAndCount).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { employeeId: 'emp-uuid', documentTypeId: 'dt-uuid' },
           order: { version: 'DESC' },
           withDeleted: true,
+          skip: 0,
+          take: 10,
         }),
       );
     });
@@ -238,17 +257,17 @@ describe('DocumentsService', () => {
       mockEmployeeRepository.findOne.mockResolvedValue(null);
 
       await expect(
-        service.getHistory('non-existent', 'dt-uuid'),
+        service.getHistory('non-existent', 'dt-uuid', { page: 1, limit: 10 }),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw NotFoundException when no history exists', async () => {
       mockEmployeeRepository.findOne.mockResolvedValue(mockEmployee);
-      mockDocumentRepository.find.mockResolvedValue([]);
+      mockDocumentRepository.findAndCount.mockResolvedValue([[], 0]);
 
-      await expect(service.getHistory('emp-uuid', 'dt-uuid')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.getHistory('emp-uuid', 'dt-uuid', { page: 1, limit: 10 }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

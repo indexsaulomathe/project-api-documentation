@@ -7,11 +7,13 @@ import { DOCUMENT_TYPE_PAYLOAD } from '../../helpers/factories';
 describe('DocumentTypes (e2e)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
+  let adminToken: string;
 
   beforeAll(async () => {
     const testApp = await createTestApp();
     app = testApp.app;
     dataSource = testApp.dataSource;
+    adminToken = testApp.adminToken;
   });
 
   afterAll(() => app.close());
@@ -24,6 +26,7 @@ describe('DocumentTypes (e2e)', () => {
     it('should create a document type and return 201', async () => {
       const { body } = await request(app.getHttpServer())
         .post('/api/v1/document-types')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(DOCUMENT_TYPE_PAYLOAD)
         .expect(201);
 
@@ -36,6 +39,7 @@ describe('DocumentTypes (e2e)', () => {
     it('should return 400 when name is missing', async () => {
       const { body } = await request(app.getHttpServer())
         .post('/api/v1/document-types')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({})
         .expect(400);
 
@@ -45,10 +49,12 @@ describe('DocumentTypes (e2e)', () => {
     it('should return 409 when name already exists', async () => {
       await request(app.getHttpServer())
         .post('/api/v1/document-types')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(DOCUMENT_TYPE_PAYLOAD);
 
       const { body } = await request(app.getHttpServer())
         .post('/api/v1/document-types')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(DOCUMENT_TYPE_PAYLOAD)
         .expect(409);
 
@@ -60,10 +66,12 @@ describe('DocumentTypes (e2e)', () => {
     it('should return paginated document types with meta', async () => {
       await request(app.getHttpServer())
         .post('/api/v1/document-types')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(DOCUMENT_TYPE_PAYLOAD);
 
       const { body } = await request(app.getHttpServer())
         .get('/api/v1/document-types')
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(body.success).toBe(true);
@@ -74,6 +82,7 @@ describe('DocumentTypes (e2e)', () => {
     it('should return 400 when limit exceeds 100', async () => {
       const { body } = await request(app.getHttpServer())
         .get('/api/v1/document-types?limit=200')
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(400);
 
       expect(body.statusCode).toBe(400);
@@ -84,10 +93,12 @@ describe('DocumentTypes (e2e)', () => {
     it('should return document type when found', async () => {
       const created = await request(app.getHttpServer())
         .post('/api/v1/document-types')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(DOCUMENT_TYPE_PAYLOAD);
 
       const { body } = await request(app.getHttpServer())
         .get(`/api/v1/document-types/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(body.success).toBe(true);
@@ -97,6 +108,7 @@ describe('DocumentTypes (e2e)', () => {
     it('should return 404 when document type not found', async () => {
       const { body } = await request(app.getHttpServer())
         .get('/api/v1/document-types/b2c3d4e5-f6a7-8901-bcde-f12345678901')
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(404);
 
       expect(body.statusCode).toBe(404);
@@ -107,6 +119,7 @@ describe('DocumentTypes (e2e)', () => {
     it('should return 400 when id is not a valid UUID', async () => {
       await request(app.getHttpServer())
         .get('/api/v1/document-types/not-a-uuid')
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(400);
     });
   });
@@ -115,10 +128,12 @@ describe('DocumentTypes (e2e)', () => {
     it('should update and return document type', async () => {
       const created = await request(app.getHttpServer())
         .post('/api/v1/document-types')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(DOCUMENT_TYPE_PAYLOAD);
 
       const { body } = await request(app.getHttpServer())
         .patch(`/api/v1/document-types/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'RG' })
         .expect(200);
 
@@ -129,6 +144,7 @@ describe('DocumentTypes (e2e)', () => {
     it('should return 404 when document type not found', async () => {
       await request(app.getHttpServer())
         .patch('/api/v1/document-types/b2c3d4e5-f6a7-8901-bcde-f12345678901')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'RG' })
         .expect(404);
     });
@@ -138,10 +154,12 @@ describe('DocumentTypes (e2e)', () => {
     it('should soft-delete document type and return success', async () => {
       const created = await request(app.getHttpServer())
         .post('/api/v1/document-types')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(DOCUMENT_TYPE_PAYLOAD);
 
       const { body } = await request(app.getHttpServer())
         .delete(`/api/v1/document-types/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(body.success).toBe(true);
@@ -150,20 +168,23 @@ describe('DocumentTypes (e2e)', () => {
     it('should not return deleted document type on GET', async () => {
       const created = await request(app.getHttpServer())
         .post('/api/v1/document-types')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(DOCUMENT_TYPE_PAYLOAD);
 
-      await request(app.getHttpServer()).delete(
-        `/api/v1/document-types/${created.body.data.id}`,
-      );
+      await request(app.getHttpServer())
+        .delete(`/api/v1/document-types/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminToken}`);
 
       await request(app.getHttpServer())
         .get(`/api/v1/document-types/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(404);
     });
 
     it('should return 404 when document type not found', async () => {
       await request(app.getHttpServer())
         .delete('/api/v1/document-types/b2c3d4e5-f6a7-8901-bcde-f12345678901')
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(404);
     });
   });

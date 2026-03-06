@@ -4,6 +4,7 @@ import { DataSource, IsNull, Repository } from 'typeorm';
 import { Document, DocumentStatus } from '../entities/document.entity';
 import { Employee } from '../../employees/entities/employee.entity';
 import { DocumentQueryDto } from '../dto/document-query.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
 import { StorageService } from '../../storage/storage.service';
 import { IUploadedFile } from '../interfaces/uploaded-file.interface';
@@ -73,6 +74,8 @@ export class DocumentsService {
         isActive: true,
         fileName: file.originalname,
         storageKey,
+        fileSize: file.size ?? file.buffer.length,
+        contentType: file.mimetype,
         submittedAt: new Date(),
       });
       await queryRunner.commitTransaction();
@@ -121,7 +124,8 @@ export class DocumentsService {
   async getHistory(
     employeeId: string,
     documentTypeId: string,
-  ): Promise<Document[]> {
+    query: PaginationDto,
+  ): Promise<PaginatedResult<Document>> {
     const employee = await this.employeeRepository.findOne({
       where: { id: employeeId, deletedAt: IsNull() },
     });
@@ -129,10 +133,15 @@ export class DocumentsService {
       throw new NotFoundException(`Employee with id ${employeeId} not found`);
     }
 
-    const history = await this.documentRepository.find({
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+
+    const [history, total] = await this.documentRepository.findAndCount({
       where: { employeeId, documentTypeId },
       order: { version: 'DESC' },
       withDeleted: true,
+      skip: (page - 1) * limit,
+      take: limit,
     });
 
     if (!history.length) {
@@ -141,7 +150,15 @@ export class DocumentsService {
       );
     }
 
-    return history;
+    return {
+      data: history,
+      meta: {
+        total,
+        page,
+        lastPage: Math.ceil(total / limit),
+        limit,
+      },
+    };
   }
 
   async findByEmployee(

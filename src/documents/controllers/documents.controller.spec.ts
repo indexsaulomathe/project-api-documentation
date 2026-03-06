@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, NotFoundException } from '@nestjs/common';
 import request from 'supertest';
 import * as http from 'http';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { DocumentsController } from './documents.controller';
 import { DocumentsService } from '../services/documents.service';
 import { IUploadedFile } from '../interfaces/uploaded-file.interface';
@@ -116,27 +117,33 @@ describe('DocumentsController', () => {
   });
 
   describe('GET /employees/:employeeId/documents/:documentTypeId/history', () => {
-    it('should call service.getHistory() and return all versions', async () => {
-      const history = [
-        { ...mockDocument, version: 2, isActive: true },
-        { ...mockDocument, id: 'doc-v1', version: 1, isActive: false },
-      ];
-      mockService.getHistory.mockResolvedValue(history);
+    it('should call service.getHistory() with pagination and return paginated result', async () => {
+      const paginated = {
+        data: [
+          { ...mockDocument, version: 2, isActive: true },
+          { ...mockDocument, id: 'doc-v1', version: 1, isActive: false },
+        ],
+        meta: { total: 2, page: 1, lastPage: 1, limit: 10 },
+      };
+      mockService.getHistory.mockResolvedValue(paginated);
 
-      const result = await controller.getHistory('emp-uuid', 'dt-uuid');
+      const result = await controller.getHistory('emp-uuid', 'dt-uuid', {
+        page: 1,
+        limit: 10,
+      });
 
-      expect(mockService.getHistory).toHaveBeenCalledWith(
-        'emp-uuid',
-        'dt-uuid',
-      );
-      expect(result).toHaveLength(2);
+      expect(mockService.getHistory).toHaveBeenCalledWith('emp-uuid', 'dt-uuid', {
+        page: 1,
+        limit: 10,
+      });
+      expect(result).toEqual(paginated);
     });
 
     it('should propagate NotFoundException when no history found', async () => {
       mockService.getHistory.mockRejectedValue(new NotFoundException());
 
       await expect(
-        controller.getHistory('emp-uuid', 'dt-uuid'),
+        controller.getHistory('emp-uuid', 'dt-uuid', {}),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -191,6 +198,14 @@ describe('DocumentsController — file upload pipe validation', () => {
     mockService.submit.mockResolvedValue(mockDocument);
 
     const module: TestingModule = await Test.createTestingModule({
+      imports: [
+        ThrottlerModule.forRoot({
+          throttlers: [
+            { name: 'upload', ttl: 60000, limit: 100 },
+            { name: 'global', ttl: 60000, limit: 100 },
+          ],
+        }),
+      ],
       controllers: [DocumentsController],
       providers: [{ provide: DocumentsService, useValue: mockService }],
     }).compile();
@@ -232,10 +247,10 @@ describe('DocumentsController — file upload pipe validation', () => {
       })
       .expect(400));
 
-  it('should return 422 when no file is provided', () =>
+  it('should return 400 when no file is provided', () =>
     request(httpApp.getHttpServer() as http.Server)
       .post(uploadUrl())
-      .expect(422));
+      .expect(400));
 
   it('should accept application/pdf', () =>
     request(httpApp.getHttpServer() as http.Server)

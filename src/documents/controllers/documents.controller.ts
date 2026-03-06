@@ -13,6 +13,8 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ACCEPTED_TYPES_LABEL,
@@ -39,6 +41,7 @@ export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
   @Post(':employeeId/documents/:documentTypeId')
+  @Throttle({ upload: {} })
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
@@ -74,7 +77,10 @@ export class DocumentsController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: MAX_UPLOAD_BYTES }),
-          new FileTypeValidator({ fileType: ALLOWED_MIME_TYPES_REGEX }),
+          new FileTypeValidator({
+            fileType: ALLOWED_MIME_TYPES_REGEX,
+            fallbackToMimetype: true,
+          }),
         ],
       }),
     )
@@ -97,17 +103,22 @@ export class DocumentsController {
   }
 
   @Get(':employeeId/documents/:documentTypeId/history')
-  @ApiOperation({ summary: 'Get version history for a document type' })
+  @ApiOperation({
+    summary: 'Get paginated version history for a document type',
+  })
   @ApiResponse({
     status: 200,
-    description: 'All versions ordered by version DESC',
+    description: 'Paginated versions ordered by version DESC',
   })
   @ApiNotFoundResponse({ description: 'Employee not found or no history' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   getHistory(
     @Param('employeeId', ParseUUIDPipe) employeeId: string,
     @Param('documentTypeId', ParseUUIDPipe) documentTypeId: string,
+    @Query() query: PaginationDto,
   ) {
-    return this.documentsService.getHistory(employeeId, documentTypeId);
+    return this.documentsService.getHistory(employeeId, documentTypeId, query);
   }
 
   @Get(':employeeId/documents')

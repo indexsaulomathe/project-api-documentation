@@ -36,6 +36,12 @@ export class Document extends BaseEntity {
   @Column({ type: 'varchar', nullable: true })
   storageKey: string | null;
 
+  @Column({ type: 'bigint', nullable: true })
+  fileSize: number | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  contentType: string | null;
+
   @Column({ nullable: true, type: 'timestamptz' })
   submittedAt: Date | null;
 
