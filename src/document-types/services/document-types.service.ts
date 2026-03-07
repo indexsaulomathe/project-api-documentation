@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { DocumentType } from '../entities/document-type.entity';
 import { CreateDocumentTypeDto } from '../dto/create-document-type.dto';
 import { UpdateDocumentTypeDto } from '../dto/update-document-type.dto';
@@ -20,7 +20,7 @@ export class DocumentTypesService {
 
   async create(dto: CreateDocumentTypeDto): Promise<DocumentType> {
     const existing = await this.docTypeRepository.findOne({
-      where: { name: dto.name, deletedAt: IsNull() },
+      where: { name: dto.name },
     });
     if (existing) {
       throw new ConflictException('Document type name already in use');
@@ -67,7 +67,7 @@ export class DocumentTypesService {
 
   async findOne(id: string): Promise<DocumentType> {
     const docType = await this.docTypeRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!docType) {
       throw new NotFoundException(`Document type with id ${id} not found`);
@@ -80,7 +80,7 @@ export class DocumentTypesService {
 
     if (dto.name && dto.name !== docType.name) {
       const existing = await this.docTypeRepository.findOne({
-        where: { name: dto.name, deletedAt: IsNull() },
+        where: { name: dto.name },
       });
       if (existing) {
         throw new ConflictException(

@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Employee } from '../entities/employee.entity';
 import { CreateEmployeeDto } from '../dto/create-employee.dto';
 import { UpdateEmployeeDto } from '../dto/update-employee.dto';
@@ -20,14 +20,14 @@ export class EmployeesService {
 
   async create(dto: CreateEmployeeDto): Promise<Employee> {
     const existingEmail = await this.employeeRepository.findOne({
-      where: { email: dto.email, deletedAt: IsNull() },
+      where: { email: dto.email },
     });
     if (existingEmail) {
       throw new ConflictException('Email already in use');
     }
 
     const existingCpf = await this.employeeRepository.findOne({
-      where: { cpf: dto.cpf, deletedAt: IsNull() },
+      where: { cpf: dto.cpf },
     });
     if (existingCpf) {
       throw new ConflictException('CPF already in use');
@@ -72,7 +72,7 @@ export class EmployeesService {
 
   async findOne(id: string): Promise<Employee> {
     const employee = await this.employeeRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!employee) {
       throw new NotFoundException(`Employee with id ${id} not found`);
@@ -85,7 +85,7 @@ export class EmployeesService {
 
     if (dto.email && dto.email !== employee.email) {
       const existing = await this.employeeRepository.findOne({
-        where: { email: dto.email, deletedAt: IsNull() },
+        where: { email: dto.email },
       });
       if (existing) {
         throw new ConflictException('Email already in use by another employee');
@@ -94,7 +94,7 @@ export class EmployeesService {
 
     if (dto.cpf && dto.cpf !== employee.cpf) {
       const existing = await this.employeeRepository.findOne({
-        where: { cpf: dto.cpf, deletedAt: IsNull() },
+        where: { cpf: dto.cpf },
       });
       if (existing) {
         throw new ConflictException('CPF already in use by another employee');

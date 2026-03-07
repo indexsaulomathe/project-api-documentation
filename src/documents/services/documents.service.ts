@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, IsNull, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { fromBuffer } from 'file-type';
 import { Document, DocumentStatus } from '../entities/document.entity';
 import { Employee } from '../../employees/entities/employee.entity';
@@ -35,7 +35,7 @@ export class DocumentsService {
     file: IUploadedFile,
   ): Promise<Document> {
     const employee = await this.employeeRepository.findOne({
-      where: { id: employeeId, deletedAt: IsNull() },
+      where: { id: employeeId },
     });
     if (!employee) {
       throw new NotFoundException(`Employee with id ${employeeId} not found`);
@@ -46,7 +46,6 @@ export class DocumentsService {
         employeeId,
         documentTypeId,
         isActive: true,
-        deletedAt: IsNull(),
       },
     });
     if (!current) {
@@ -110,7 +109,7 @@ export class DocumentsService {
     documentTypeId: string,
   ): Promise<string> {
     const employee = await this.employeeRepository.findOne({
-      where: { id: employeeId, deletedAt: IsNull() },
+      where: { id: employeeId },
     });
     if (!employee) {
       throw new NotFoundException(`Employee with id ${employeeId} not found`);
@@ -121,7 +120,6 @@ export class DocumentsService {
         employeeId,
         documentTypeId,
         isActive: true,
-        deletedAt: IsNull(),
       },
     });
     if (!doc) {
@@ -144,7 +142,7 @@ export class DocumentsService {
     query: PaginationDto,
   ): Promise<PaginatedResult<Document>> {
     const employee = await this.employeeRepository.findOne({
-      where: { id: employeeId, deletedAt: IsNull() },
+      where: { id: employeeId },
     });
     if (!employee) {
       throw new NotFoundException(`Employee with id ${employeeId} not found`);
@@ -183,7 +181,7 @@ export class DocumentsService {
     query: DocumentQueryDto,
   ): Promise<PaginatedResult<Document>> {
     const employee = await this.employeeRepository.findOne({
-      where: { id: employeeId, deletedAt: IsNull() },
+      where: { id: employeeId },
     });
     if (!employee) {
       throw new NotFoundException(`Employee with id ${employeeId} not found`);
