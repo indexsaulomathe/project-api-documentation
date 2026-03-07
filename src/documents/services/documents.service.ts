@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, IsNull, Repository } from 'typeorm';
+import { fromBuffer } from 'file-type';
 import { Document, DocumentStatus } from '../entities/document.entity';
 import { Employee } from '../../employees/entities/employee.entity';
 import { DocumentQueryDto } from '../dto/document-query.dto';
@@ -8,6 +13,9 @@ import { PaginationDto } from '../../common/dto/pagination.dto';
 import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
 import { StorageService } from '../../storage/storage.service';
 import { IUploadedFile } from '../interfaces/uploaded-file.interface';
+import { AllowedMimeType } from '../dto/allowed-mime-types.enum';
+
+const ALLOWED_MIME_SET = new Set<string>(Object.values(AllowedMimeType));
 
 @Injectable()
 export class DocumentsService {
@@ -44,6 +52,15 @@ export class DocumentsService {
     if (!current) {
       throw new NotFoundException(
         'No active document found for this employee and document type',
+      );
+    }
+
+    const detected = await fromBuffer(file.buffer);
+    const detectedMime = detected?.mime ?? 'unknown';
+
+    if (!ALLOWED_MIME_SET.has(detectedMime)) {
+      throw new BadRequestException(
+        `File content does not match an allowed type (detected: ${detectedMime})`,
       );
     }
 

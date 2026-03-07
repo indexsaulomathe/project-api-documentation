@@ -34,10 +34,13 @@ const mockSubmittedDocument = {
   submittedAt: new Date(),
 };
 
+// Real PDF bytes (%PDF-) so file-type detection passes
+const PDF_BYTES = Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34]);
+
 const mockFile: IUploadedFile = {
   originalname: 'cpf-joao.pdf',
   mimetype: 'application/pdf',
-  buffer: Buffer.from('pdf content'),
+  buffer: PDF_BYTES,
 };
 
 interface QueryRunnerMock {

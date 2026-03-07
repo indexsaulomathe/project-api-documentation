@@ -10,6 +10,7 @@ export enum DocumentStatus {
 
 @Entity('documents')
 @Index(['employeeId', 'documentTypeId', 'isActive'])
+@Index(['employeeId', 'status'])
 export class Document extends BaseEntity {
   @Column()
   employeeId: string;

@@ -1,4 +1,4 @@
-import { Column, Entity, OneToMany } from 'typeorm';
+import { Column, Entity, Index, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity';
 import { EmployeeDocumentType } from '../../employee-document-types/entities/employee-document-type.entity';
 import { Document } from '../../documents/entities/document.entity';
@@ -11,6 +11,7 @@ export class DocumentType extends BaseEntity {
   @Column({ type: 'varchar', nullable: true })
   description: string | null;
 
+  @Index()
   @Column({ default: false })
   isRequired: boolean;
 
