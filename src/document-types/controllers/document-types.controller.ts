@@ -12,6 +12,7 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiNotFoundResponse,
   ApiOperation,
@@ -24,6 +25,7 @@ import { CreateDocumentTypeDto } from '../dto/create-document-type.dto';
 import { UpdateDocumentTypeDto } from '../dto/update-document-type.dto';
 import { DocumentTypeQueryDto } from '../dto/document-type-query.dto';
 
+@ApiBearerAuth()
 @ApiTags('document-types')
 @Controller({ path: 'document-types', version: '1' })
 export class DocumentTypesController {

@@ -12,6 +12,7 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiNotFoundResponse,
   ApiOperation,
@@ -24,6 +25,7 @@ import { CreateEmployeeDto } from '../dto/create-employee.dto';
 import { UpdateEmployeeDto } from '../dto/update-employee.dto';
 import { EmployeeQueryDto } from '../dto/employee-query.dto';
 
+@ApiBearerAuth()
 @ApiTags('employees')
 @Controller({ path: 'employees', version: '1' })
 export class EmployeesController {

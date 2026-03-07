@@ -18,15 +18,6 @@ import { Public } from '../decorators/public.decorator';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('register')
-  @Public()
-  @ApiOperation({ summary: 'Register a new user' })
-  @ApiResponse({ status: 201, description: 'User registered, tokens returned' })
-  @ApiResponse({ status: 409, description: 'Email already registered' })
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
-  }
-
   @Post('login')
   @Public()
   @HttpCode(HttpStatus.OK)
@@ -47,5 +38,14 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
   refresh(@Body() dto: RefreshDto) {
     return this.authService.refresh(dto);
+  }
+
+  @Post('register')
+  @Public()
+  @ApiOperation({ summary: 'Register a new user' })
+  @ApiResponse({ status: 201, description: 'User registered, tokens returned' })
+  @ApiResponse({ status: 409, description: 'Email already registered' })
+  register(@Body() dto: RegisterDto) {
+    return this.authService.register(dto);
   }
 }

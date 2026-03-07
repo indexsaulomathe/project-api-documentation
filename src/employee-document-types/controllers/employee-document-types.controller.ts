@@ -10,6 +10,7 @@ import {
   Post,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiNotFoundResponse,
   ApiOperation,
@@ -19,6 +20,7 @@ import {
 import { EmployeeDocumentTypesService } from '../services/employee-document-types.service';
 import { CreateLinkDto } from '../dto/create-link.dto';
 
+@ApiBearerAuth()
 @ApiTags('employee-document-types')
 @Controller({ path: 'employees', version: '1' })
 export class EmployeeDocumentTypesController {

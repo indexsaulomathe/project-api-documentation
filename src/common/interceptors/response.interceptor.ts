@@ -9,13 +9,13 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 export interface PaginatedData<T> {
-  data: T[];
   meta: {
-    total: number;
     page: number;
-    lastPage: number;
     limit: number;
+    lastPage: number;
+    total: number;
   };
+  data: T[];
 }
 
 @Injectable()
@@ -29,6 +29,12 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, unknown> {
 
     return next.handle().pipe(
       map((data) => {
+        // Skip wrapping for non-JSON responses (e.g. Prometheus text/plain)
+        const contentType = String(response.getHeader('Content-Type') ?? '');
+        if (contentType.startsWith('text/')) {
+          return data;
+        }
+
         const paginated = data as unknown as PaginatedData<unknown>;
         if (
           data &&
@@ -39,8 +45,8 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, unknown> {
           return {
             success: true,
             statusCode,
-            data: paginated.data,
             meta: paginated.meta,
+            data: paginated.data,
           };
         }
 

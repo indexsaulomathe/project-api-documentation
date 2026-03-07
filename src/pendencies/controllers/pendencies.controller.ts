@@ -1,8 +1,15 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { PendenciesService } from '../services/pendencies.service';
 import { PendencyQueryDto } from '../dto/pendency-query.dto';
 
+@ApiBearerAuth()
 @ApiTags('pendencies')
 @Controller({ path: 'pendencies', version: '1' })
 export class PendenciesController {

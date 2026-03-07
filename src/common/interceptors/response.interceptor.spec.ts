@@ -8,7 +8,10 @@ describe('ResponseInterceptor', () => {
   const mockContext = (statusCode = 200): ExecutionContext =>
     ({
       switchToHttp: () => ({
-        getResponse: () => ({ statusCode }),
+        getResponse: () => ({
+          statusCode,
+          getHeader: () => 'application/json',
+        }),
       }),
     }) as unknown as ExecutionContext;
 

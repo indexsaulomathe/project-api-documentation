@@ -1,7 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { StatisticsService } from '../services/statistics.service';
 
+@ApiBearerAuth()
 @ApiTags('statistics')
 @Controller({ path: 'statistics', version: '1' })
 export class StatisticsController {

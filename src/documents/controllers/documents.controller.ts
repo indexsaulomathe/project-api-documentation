@@ -22,6 +22,7 @@ import {
   MAX_UPLOAD_BYTES,
 } from '../dto/allowed-mime-types.enum';
 import {
+  ApiBearerAuth,
   ApiConsumes,
   ApiBody,
   ApiNotFoundResponse,
@@ -35,6 +36,7 @@ import { IUploadedFile } from '../interfaces/uploaded-file.interface';
 import { DocumentQueryDto } from '../dto/document-query.dto';
 import { DocumentStatus } from '../entities/document.entity';
 
+@ApiBearerAuth()
 @ApiTags('documents')
 @Controller({ path: 'employees', version: '1' })
 export class DocumentsController {

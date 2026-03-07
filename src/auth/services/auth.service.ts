@@ -94,18 +94,18 @@ export class AuthService {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
         secret: process.env.JWT_SECRET ?? 'changeme',
-        expiresIn: '15m',
+        expiresIn: '30m', // Short-lived access token 30 MINUTES
       }),
       this.jwtService.signAsync(
         { sub: user.id, type: 'refresh', jti },
         {
           secret: process.env.JWT_REFRESH_SECRET ?? 'refresh-changeme',
-          expiresIn: '7d',
+          expiresIn: '7d', // Longer-lived refresh token 7 DAYS
         },
       ),
     ]);
 
-    // Hash the jti (UUID) — bcrypt is safe at 36 chars, avoids the 72-byte limit
+    // Hash the jti (UUID) — bcrypt is safe at 36 chars
     const refreshTokenHash = await bcrypt.hash(jti, 10);
     await this.userRepo.update(user.id, { refreshTokenHash });
 
