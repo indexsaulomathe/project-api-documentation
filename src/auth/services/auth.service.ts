@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
+import type { StringValue } from 'ms';
 import * as bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import { User, UserRole } from '../entities/user.entity';
@@ -94,13 +95,14 @@ export class AuthService {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
         secret: process.env.JWT_SECRET ?? 'changeme',
-        expiresIn: '30m', // Short-lived access token 30 MINUTES
+        expiresIn: (process.env.JWT_EXPIRES_IN ?? '30m') as StringValue,
       }),
       this.jwtService.signAsync(
         { sub: user.id, type: 'refresh', jti },
         {
           secret: process.env.JWT_REFRESH_SECRET ?? 'refresh-changeme',
-          expiresIn: '7d', // Longer-lived refresh token 7 DAYS
+          expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN ??
+            '7d') as StringValue,
         },
       ),
     ]);

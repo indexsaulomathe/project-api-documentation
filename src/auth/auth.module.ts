@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import type { StringValue } from 'ms';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -13,7 +14,9 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: process.env.JWT_SECRET ?? 'changeme',
-      signOptions: { expiresIn: '15m' },
+      signOptions: {
+        expiresIn: (process.env.JWT_EXPIRES_IN ?? '30m') as StringValue,
+      },
     }),
   ],
   controllers: [AuthController],

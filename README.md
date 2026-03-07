@@ -264,7 +264,7 @@ In **Swagger UI**, click the **Authorize** button (top right) and paste your `ac
 yarn test
 ```
 
-189 tests across 23 suites — controllers, services, filters, interceptors, middleware.
+- controllers, services, filters, interceptors, middleware.
 
 ### Unit tests with coverage
 
@@ -283,7 +283,7 @@ yarn docker:up:db
 yarn test:e2e
 ```
 
-85 E2E tests across 8 suites. Each suite spins up the full NestJS application against the isolated test database (`docs_management_test` on port 5433). Migrations run automatically on setup; tables are truncated between suites for isolation. `maxWorkers: 1` ensures suites run serially.
+Each suite spins up the full NestJS application against the isolated test database (`docs_management_test` on port 5433). Migrations run automatically on setup; tables are truncated between suites for isolation. `maxWorkers: 1` ensures suites run serially.
 
 ### CI
 
@@ -395,7 +395,6 @@ yarn docker:down:v       # Stop all services and remove volumes
 
 - Linking a document type to an employee automatically creates a `PENDING` Document (version 1).
 - Uploading a file deactivates the current version and creates a new one (`version + 1`, status `SUBMITTED`) inside database transaction.
-- Uploading the **same file twice** (identical SHA-256) returns the existing document without creating a new version.
 - Unlinking soft-deletes both the `EmployeeDocumentType` and any associated pending document.
 - All entities use UUID primary keys and support soft delete (`deletedAt`).
 
