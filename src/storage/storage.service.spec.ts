@@ -85,7 +85,12 @@ describe('StorageService', () => {
       const key = 'emp-1/doc-1/v1/file.pdf';
       const body = Buffer.from('pdf content');
 
-      const result = await service.upload(key, body, 'application/pdf', 'file.pdf');
+      const result = await service.upload(
+        key,
+        body,
+        'application/pdf',
+        'file.pdf',
+      );
 
       expect(result).toBe(key);
       expect(mockSend).toHaveBeenCalledTimes(1);

@@ -10,7 +10,11 @@ describe('MetricsInterceptor', () => {
   let mockGauge: jest.Mocked<Gauge<string>>;
   let endTimerMock: jest.Mock;
 
-  const buildContext = (path = '/api/v1/employees', method = 'GET', statusCode = 200): ExecutionContext => {
+  const buildContext = (
+    path = '/api/v1/employees',
+    method = 'GET',
+    statusCode = 200,
+  ): ExecutionContext => {
     const req = { method, path, route: { path } };
     const res = { statusCode };
     return {
@@ -22,10 +26,10 @@ describe('MetricsInterceptor', () => {
   };
 
   const buildHandler = (value: unknown = {}): CallHandler =>
-    ({ handle: () => of(value) } as CallHandler);
+    ({ handle: () => of(value) }) as CallHandler;
 
   const buildThrowingHandler = (err: Error): CallHandler =>
-    ({ handle: () => throwError(() => err) } as CallHandler);
+    ({ handle: () => throwError(() => err) }) as CallHandler;
 
   beforeEach(() => {
     endTimerMock = jest.fn();

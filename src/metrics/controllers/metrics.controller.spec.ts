@@ -28,10 +28,7 @@ describe('MetricsController', () => {
   it('returns metrics when METRICS_TOKEN env var is not set', async () => {
     delete process.env.METRICS_TOKEN;
 
-    const result = await controller.index(
-      mockResponse as Response,
-      undefined,
-    );
+    const result = await controller.index(mockResponse as Response, undefined);
 
     expect(result).toContain('# HELP');
     expect(PrometheusController.prototype.index).toHaveBeenCalled();

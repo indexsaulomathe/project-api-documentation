@@ -50,15 +50,17 @@ export async function createTestApp(): Promise<TestApp> {
   await dataSource.query(`TRUNCATE TABLE users RESTART IDENTITY CASCADE`);
 
   // Register default admin user for tests
-  await request(app.getHttpServer())
+  const server = app.getHttpServer() as Parameters<typeof request>[0];
+  await request(server)
     .post('/api/v1/auth/register')
     .send({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD, role: 'admin' });
 
-  const loginRes = await request(app.getHttpServer())
+  const loginRes = await request(server)
     .post('/api/v1/auth/login')
     .send({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
 
-  const adminToken = loginRes.body.data.accessToken as string;
+  const loginBody = loginRes.body as { data: { accessToken: string } };
+  const adminToken = loginBody.data.accessToken;
 
   return { app, dataSource, adminToken };
 }

@@ -39,7 +39,10 @@ describe('Documents (e2e)', () => {
       const { body } = await request(app.getHttpServer())
         .post(`/api/v1/employees/${employeeId}/documents/${documentTypeId}`)
         .set('Authorization', `Bearer ${adminToken}`)
-        .attach('file', PDF_BUF, { filename: 'cpf.pdf', contentType: 'application/pdf' })
+        .attach('file', PDF_BUF, {
+          filename: 'cpf.pdf',
+          contentType: 'application/pdf',
+        })
         .expect(201);
 
       expect(body.success).toBe(true);
@@ -53,12 +56,18 @@ describe('Documents (e2e)', () => {
       await request(app.getHttpServer())
         .post(`/api/v1/employees/${employeeId}/documents/${documentTypeId}`)
         .set('Authorization', `Bearer ${adminToken}`)
-        .attach('file', PDF_BUF, { filename: 'cpf-v1.pdf', contentType: 'application/pdf' });
+        .attach('file', PDF_BUF, {
+          filename: 'cpf-v1.pdf',
+          contentType: 'application/pdf',
+        });
 
       const { body } = await request(app.getHttpServer())
         .post(`/api/v1/employees/${employeeId}/documents/${documentTypeId}`)
         .set('Authorization', `Bearer ${adminToken}`)
-        .attach('file', PDF_BUF, { filename: 'cpf-v2.pdf', contentType: 'application/pdf' })
+        .attach('file', PDF_BUF, {
+          filename: 'cpf-v2.pdf',
+          contentType: 'application/pdf',
+        })
         .expect(201);
 
       expect(body.data.version).toBe(3);
@@ -77,7 +86,10 @@ describe('Documents (e2e)', () => {
       const { body } = await request(app.getHttpServer())
         .post(`/api/v1/employees/${employeeId}/documents/${documentTypeId}`)
         .set('Authorization', `Bearer ${adminToken}`)
-        .attach('file', Buffer.from('plain text'), { filename: 'doc.txt', contentType: 'text/plain' })
+        .attach('file', Buffer.from('plain text'), {
+          filename: 'doc.txt',
+          contentType: 'text/plain',
+        })
         .expect(400);
 
       expect(body.statusCode).toBe(400);
@@ -89,7 +101,10 @@ describe('Documents (e2e)', () => {
           `/api/v1/employees/a1b2c3d4-e5f6-7890-abcd-ef1234567890/documents/${documentTypeId}`,
         )
         .set('Authorization', `Bearer ${adminToken}`)
-        .attach('file', PDF_BUF, { filename: 'cpf.pdf', contentType: 'application/pdf' })
+        .attach('file', PDF_BUF, {
+          filename: 'cpf.pdf',
+          contentType: 'application/pdf',
+        })
         .expect(404);
 
       expect(body.statusCode).toBe(404);
@@ -108,7 +123,10 @@ describe('Documents (e2e)', () => {
       const { body } = await request(app.getHttpServer())
         .post(`/api/v1/employees/${employeeId}/documents/${unlinkedDocTypeId}`)
         .set('Authorization', `Bearer ${adminToken}`)
-        .attach('file', PDF_BUF, { filename: 'rg.pdf', contentType: 'application/pdf' })
+        .attach('file', PDF_BUF, {
+          filename: 'rg.pdf',
+          contentType: 'application/pdf',
+        })
         .expect(404);
 
       expect(body.statusCode).toBe(404);
@@ -120,7 +138,10 @@ describe('Documents (e2e)', () => {
       await request(app.getHttpServer())
         .post(`/api/v1/employees/${employeeId}/documents/${documentTypeId}`)
         .set('Authorization', `Bearer ${adminToken}`)
-        .attach('file', PDF_BUF, { filename: 'cpf-v2.pdf', contentType: 'application/pdf' });
+        .attach('file', PDF_BUF, {
+          filename: 'cpf-v2.pdf',
+          contentType: 'application/pdf',
+        });
 
       const { body } = await request(app.getHttpServer())
         .get(
@@ -183,7 +204,10 @@ describe('Documents (e2e)', () => {
       await request(app.getHttpServer())
         .post(`/api/v1/employees/${employeeId}/documents/${documentTypeId}`)
         .set('Authorization', `Bearer ${adminToken}`)
-        .attach('file', PDF_BUF, { filename: 'cpf.pdf', contentType: 'application/pdf' });
+        .attach('file', PDF_BUF, {
+          filename: 'cpf.pdf',
+          contentType: 'application/pdf',
+        });
 
       const { body } = await request(app.getHttpServer())
         .get(`/api/v1/employees/${employeeId}/documents?status=submitted`)

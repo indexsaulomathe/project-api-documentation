@@ -141,7 +141,11 @@ describe('AuthService', () => {
 
     it('should throw UnauthorizedException when token hash does not match', async () => {
       const jti = 'correct-jti-uuid';
-      jwtService.verifyAsync.mockResolvedValue({ sub: 'uid', type: 'refresh', jti });
+      jwtService.verifyAsync.mockResolvedValue({
+        sub: 'uid',
+        type: 'refresh',
+        jti,
+      });
       userRepo.findOne.mockResolvedValue({
         id: 'uid',
         refreshTokenHash: await bcrypt.hash('other-jti-uuid', 10),
@@ -157,7 +161,11 @@ describe('AuthService', () => {
     it('should return new tokens and rotate refresh token', async () => {
       const jti = 'valid-jti-uuid';
       const jtiHash = await bcrypt.hash(jti, 10);
-      jwtService.verifyAsync.mockResolvedValue({ sub: 'uid', type: 'refresh', jti });
+      jwtService.verifyAsync.mockResolvedValue({
+        sub: 'uid',
+        type: 'refresh',
+        jti,
+      });
       userRepo.findOne.mockResolvedValue({
         id: 'uid',
         email: 'a@a.com',
@@ -167,7 +175,9 @@ describe('AuthService', () => {
       jwtService.signAsync.mockResolvedValue('new-token');
       userRepo.update.mockResolvedValue({});
 
-      const result = await service.refresh({ refreshToken: 'old.refresh.token' });
+      const result = await service.refresh({
+        refreshToken: 'old.refresh.token',
+      });
 
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');

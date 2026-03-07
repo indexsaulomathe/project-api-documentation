@@ -16,7 +16,13 @@ export class PendenciesService {
   ) {}
 
   async findAll(query: PendencyQueryDto): Promise<PaginatedResult<Document>> {
-    const { page = 1, limit = 10, employeeId, documentTypeId, department } = query;
+    const {
+      page = 1,
+      limit = 10,
+      employeeId,
+      documentTypeId,
+      department,
+    } = query;
 
     const qb = this.documentRepository
       .createQueryBuilder('document')
@@ -32,7 +38,9 @@ export class PendenciesService {
     }
 
     if (documentTypeId) {
-      qb.andWhere('document.documentTypeId = :documentTypeId', { documentTypeId });
+      qb.andWhere('document.documentTypeId = :documentTypeId', {
+        documentTypeId,
+      });
     }
 
     if (department) {

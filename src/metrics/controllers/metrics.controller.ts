@@ -1,4 +1,10 @@
-import { Controller, Get, Res, Headers, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Res,
+  Headers,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@nestjs/swagger';
 import { PrometheusController } from '@willsoto/nestjs-prometheus';
 import { Response } from 'express';

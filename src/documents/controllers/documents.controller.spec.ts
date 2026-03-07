@@ -132,10 +132,14 @@ describe('DocumentsController', () => {
         limit: 10,
       });
 
-      expect(mockService.getHistory).toHaveBeenCalledWith('emp-uuid', 'dt-uuid', {
-        page: 1,
-        limit: 10,
-      });
+      expect(mockService.getHistory).toHaveBeenCalledWith(
+        'emp-uuid',
+        'dt-uuid',
+        {
+          page: 1,
+          limit: 10,
+        },
+      );
       expect(result).toEqual(paginated);
     });
 
