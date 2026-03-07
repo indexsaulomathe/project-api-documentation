@@ -137,3 +137,12 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+
+# doc
+api-doc-check-list.md
+.api-doc-check-list.md
+./api-doc-check-list.md
+
+# ENV
+.env
