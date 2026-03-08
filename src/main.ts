@@ -37,6 +37,7 @@ async function bootstrap() {
     .setVersion('1.0')
     .addBearerAuth()
     .addTag('auth', 'Authentication')
+    .addTag('users', 'User account management')
     .addTag('employees', 'Employee management')
     .addTag('document-types', 'Document types')
     .addTag('documents', 'Document submission and versioning')
