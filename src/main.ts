@@ -4,12 +4,14 @@ import { Logger as PinoLogger } from 'nestjs-pino';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import compression from 'compression';
-import { json, urlencoded } from 'express';
+import { json, urlencoded, type Application } from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(PinoLogger));
+
+  (app.getHttpAdapter().getInstance() as Application).set('trust proxy', 1);
 
   app.use(helmet());
   app.use(compression());
