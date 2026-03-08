@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Employee } from '../../employees/entities/employee.entity';
 import { DocumentType } from '../../document-types/entities/document-type.entity';
 import {
@@ -53,20 +53,18 @@ export class StatisticsService {
       mostPendingDocumentTypes,
       latestSubmissions,
     ] = await Promise.all([
-      this.employeeRepository.count({ where: { deletedAt: IsNull() } }),
-      this.docTypeRepository.count({ where: { deletedAt: IsNull() } }),
+      this.employeeRepository.count(),
+      this.docTypeRepository.count(),
       this.documentRepository.count({
         where: {
           status: DocumentStatus.PENDING,
           isActive: true,
-          deletedAt: IsNull(),
         },
       }),
       this.documentRepository.count({
         where: {
           status: DocumentStatus.SUBMITTED,
           isActive: true,
-          deletedAt: IsNull(),
         },
       }),
       this.getMostPendingDocumentTypes(),

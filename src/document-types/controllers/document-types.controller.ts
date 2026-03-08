@@ -10,6 +10,7 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -24,6 +25,9 @@ import { DocumentTypesService } from '../services/document-types.service';
 import { CreateDocumentTypeDto } from '../dto/create-document-type.dto';
 import { UpdateDocumentTypeDto } from '../dto/update-document-type.dto';
 import { DocumentTypeQueryDto } from '../dto/document-type-query.dto';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { UserRole } from '../../auth/entities/user.entity';
 
 @ApiBearerAuth()
 @ApiTags('document-types')
@@ -32,12 +36,15 @@ export class DocumentTypesController {
   constructor(private readonly documentTypesService: DocumentTypesService) {}
 
   @Post()
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new document type' })
   @ApiResponse({
     status: 201,
     description: 'Document type created successfully',
   })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiConflictResponse({ description: 'Document type name already in use' })
   create(@Body() dto: CreateDocumentTypeDto) {
     return this.documentTypesService.create(dto);
@@ -65,11 +72,14 @@ export class DocumentTypesController {
   }
 
   @Patch(':id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Update document type' })
   @ApiResponse({
     status: 200,
     description: 'Document type updated successfully',
   })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiNotFoundResponse({ description: 'Document type not found' })
   @ApiConflictResponse({ description: 'Document type name already in use' })
   update(
@@ -80,11 +90,14 @@ export class DocumentTypesController {
   }
 
   @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Soft delete document type' })
   @ApiResponse({
     status: 200,
     description: 'Document type removed successfully',
   })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiNotFoundResponse({ description: 'Document type not found' })
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.documentTypesService.remove(id);

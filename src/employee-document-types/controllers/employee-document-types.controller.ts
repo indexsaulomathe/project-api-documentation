@@ -8,6 +8,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -19,6 +20,9 @@ import {
 } from '@nestjs/swagger';
 import { EmployeeDocumentTypesService } from '../services/employee-document-types.service';
 import { CreateLinkDto } from '../dto/create-link.dto';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { UserRole } from '../../auth/entities/user.entity';
 
 @ApiBearerAuth()
 @ApiTags('employee-document-types')
@@ -29,9 +33,12 @@ export class EmployeeDocumentTypesController {
   ) {}
 
   @Post(':employeeId/document-types')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Link a document type to an employee' })
   @ApiResponse({ status: 201, description: 'Link created successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiNotFoundResponse({ description: 'Employee or document type not found' })
   @ApiConflictResponse({
     description: 'Document type already linked to this employee',
@@ -47,8 +54,11 @@ export class EmployeeDocumentTypesController {
   }
 
   @Delete(':employeeId/document-types/:documentTypeId')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Unlink a document type from an employee' })
   @ApiResponse({ status: 200, description: 'Link removed successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiNotFoundResponse({
     description: 'Link between employee and document type not found',
   })

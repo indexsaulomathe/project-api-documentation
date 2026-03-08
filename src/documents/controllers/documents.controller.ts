@@ -96,6 +96,7 @@ export class DocumentsController {
     summary: 'Get a signed download URL for the active document',
   })
   @ApiResponse({ status: 200, description: 'Signed URL (valid 1 hour)' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiNotFoundResponse({ description: 'Employee, document, or file not found' })
   download(
     @Param('employeeId', ParseUUIDPipe) employeeId: string,
@@ -112,6 +113,7 @@ export class DocumentsController {
     status: 200,
     description: 'Paginated versions ordered by version DESC',
   })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiNotFoundResponse({ description: 'Employee not found or no history' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -126,6 +128,7 @@ export class DocumentsController {
   @Get(':employeeId/documents')
   @ApiOperation({ summary: 'List active documents for an employee' })
   @ApiResponse({ status: 200, description: 'Paginated list of documents' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiNotFoundResponse({ description: 'Employee not found' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })

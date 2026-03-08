@@ -15,6 +15,7 @@ import { StatisticsModule } from './statistics/statistics.module';
 import { StorageModule } from './storage/storage.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -57,6 +58,7 @@ import { RolesGuard } from './auth/guards/roles.guard';
     StorageModule,
     HealthModule,
     AuthModule,
+    UsersModule,
   ],
   providers: [
     {

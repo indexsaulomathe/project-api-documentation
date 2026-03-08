@@ -10,6 +10,7 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -24,6 +25,9 @@ import { EmployeesService } from '../services/employees.service';
 import { CreateEmployeeDto } from '../dto/create-employee.dto';
 import { UpdateEmployeeDto } from '../dto/update-employee.dto';
 import { EmployeeQueryDto } from '../dto/employee-query.dto';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { UserRole } from '../../auth/entities/user.entity';
 
 @ApiBearerAuth()
 @ApiTags('employees')
@@ -32,9 +36,12 @@ export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
 
   @Post()
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new employee' })
   @ApiResponse({ status: 201, description: 'Employee created successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiConflictResponse({ description: 'Email or CPF already in use' })
   create(@Body() dto: CreateEmployeeDto) {
     return this.employeesService.create(dto);
@@ -60,8 +67,11 @@ export class EmployeesController {
   }
 
   @Patch(':id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Update employee' })
   @ApiResponse({ status: 200, description: 'Employee updated successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiNotFoundResponse({ description: 'Employee not found' })
   @ApiConflictResponse({ description: 'Email or CPF already in use' })
   update(
@@ -72,8 +82,11 @@ export class EmployeesController {
   }
 
   @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Soft delete employee' })
   @ApiResponse({ status: 200, description: 'Employee removed successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiNotFoundResponse({ description: 'Employee not found' })
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.employeesService.remove(id);

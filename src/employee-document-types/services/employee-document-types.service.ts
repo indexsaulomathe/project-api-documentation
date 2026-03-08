@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, IsNull, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { EmployeeDocumentType } from '../entities/employee-document-type.entity';
 import { Employee } from '../../employees/entities/employee.entity';
 import { DocumentType } from '../../document-types/entities/document-type.entity';
@@ -31,14 +31,14 @@ export class EmployeeDocumentTypesService {
     documentTypeId: string,
   ): Promise<EmployeeDocumentType> {
     const employee = await this.employeeRepository.findOne({
-      where: { id: employeeId, deletedAt: IsNull() },
+      where: { id: employeeId },
     });
     if (!employee) {
       throw new NotFoundException(`Employee with id ${employeeId} not found`);
     }
 
     const docType = await this.docTypeRepository.findOne({
-      where: { id: documentTypeId, deletedAt: IsNull() },
+      where: { id: documentTypeId },
     });
     if (!docType) {
       throw new NotFoundException(
@@ -47,7 +47,7 @@ export class EmployeeDocumentTypesService {
     }
 
     const existing = await this.edtRepository.findOne({
-      where: { employeeId, documentTypeId, deletedAt: IsNull() },
+      where: { employeeId, documentTypeId },
     });
     if (existing) {
       throw new ConflictException(
@@ -85,7 +85,7 @@ export class EmployeeDocumentTypesService {
     documentTypeId: string,
   ): Promise<{ message: string }> {
     const link = await this.edtRepository.findOne({
-      where: { employeeId, documentTypeId, deletedAt: IsNull() },
+      where: { employeeId, documentTypeId },
     });
     if (!link) {
       throw new NotFoundException(
@@ -116,14 +116,14 @@ export class EmployeeDocumentTypesService {
 
   async findByEmployee(employeeId: string): Promise<EmployeeDocumentType[]> {
     const employee = await this.employeeRepository.findOne({
-      where: { id: employeeId, deletedAt: IsNull() },
+      where: { id: employeeId },
     });
     if (!employee) {
       throw new NotFoundException(`Employee with id ${employeeId} not found`);
     }
 
     return this.edtRepository.find({
-      where: { employeeId, deletedAt: IsNull() },
+      where: { employeeId },
       relations: ['documentType'],
     });
   }
