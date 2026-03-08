@@ -95,15 +95,29 @@ describe('Users (e2e)', () => {
     });
 
     it('should update password and allow login with new password', async () => {
+      const tempEmail = 'temp.password@test.com';
+      const tempPassword = 'TempPass@123';
+      const newPassword = 'NewPassw@456';
+
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({ email: tempEmail, password: tempPassword, role: 'employee' });
+
+      const loginRes = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ email: tempEmail, password: tempPassword });
+      const tempToken = (loginRes.body as { data: { accessToken: string } })
+        .data.accessToken;
+
       await request(app.getHttpServer())
         .patch('/api/v1/users/me')
-        .set('Authorization', `Bearer ${employeeToken}`)
-        .send({ password: 'NewPassw@456' })
+        .set('Authorization', `Bearer ${tempToken}`)
+        .send({ password: newPassword })
         .expect(200);
 
       await request(app.getHttpServer())
         .post('/api/v1/auth/login')
-        .send({ email: EMPLOYEE_EMAIL, password: 'NewPassw@456' })
+        .send({ email: tempEmail, password: newPassword })
         .expect(200);
     });
 
@@ -239,9 +253,19 @@ describe('Users (e2e)', () => {
     });
 
     it('should return 403 when non-admin requests', async () => {
+      const tempEmail = 'temp.role@test.com';
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({ email: tempEmail, password: 'TempPass@123', role: 'employee' });
+      const loginRes = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ email: tempEmail, password: 'TempPass@123' });
+      const tempToken = (loginRes.body as { data: { accessToken: string } })
+        .data.accessToken;
+
       await request(app.getHttpServer())
         .patch(`/api/v1/users/${adminId}/role`)
-        .set('Authorization', `Bearer ${employeeToken}`)
+        .set('Authorization', `Bearer ${tempToken}`)
         .send({ role: 'admin' })
         .expect(403);
     });
@@ -285,9 +309,19 @@ describe('Users (e2e)', () => {
     });
 
     it('should return 403 when non-admin requests', async () => {
+      const tempEmail = 'temp.delete@test.com';
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({ email: tempEmail, password: 'TempPass@123', role: 'employee' });
+      const loginRes = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ email: tempEmail, password: 'TempPass@123' });
+      const tempToken = (loginRes.body as { data: { accessToken: string } })
+        .data.accessToken;
+
       await request(app.getHttpServer())
         .delete(`/api/v1/users/${adminId}`)
-        .set('Authorization', `Bearer ${employeeToken}`)
+        .set('Authorization', `Bearer ${tempToken}`)
         .expect(403);
     });
 
