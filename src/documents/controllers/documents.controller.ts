@@ -11,7 +11,6 @@ import {
   Post,
   Query,
   UploadedFile,
-  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
@@ -36,9 +35,6 @@ import { DocumentsService } from '../services/documents.service';
 import { IUploadedFile } from '../interfaces/uploaded-file.interface';
 import { DocumentQueryDto } from '../dto/document-query.dto';
 import { DocumentStatus } from '../entities/document.entity';
-import { Roles } from '../../auth/decorators/roles.decorator';
-import { RolesGuard } from '../../auth/guards/roles.guard';
-import { UserRole } from '../../auth/entities/user.entity';
 
 @ApiBearerAuth()
 @ApiTags('documents')
@@ -96,8 +92,6 @@ export class DocumentsController {
   }
 
   @Get(':employeeId/documents/:documentTypeId/download')
-  @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
   @ApiOperation({
     summary: 'Get a signed download URL for the active document',
   })
@@ -112,8 +106,6 @@ export class DocumentsController {
   }
 
   @Get(':employeeId/documents/:documentTypeId/history')
-  @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
   @ApiOperation({
     summary: 'Get paginated version history for a document type',
   })
@@ -134,8 +126,6 @@ export class DocumentsController {
   }
 
   @Get(':employeeId/documents')
-  @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'List active documents for an employee' })
   @ApiResponse({ status: 200, description: 'Paginated list of documents' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
