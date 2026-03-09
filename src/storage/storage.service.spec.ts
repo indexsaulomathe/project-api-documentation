@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { StorageService } from './storage.service';
 import { S3Client } from '@aws-sdk/client-s3';
@@ -52,6 +53,8 @@ describe('StorageService', () => {
     }).compile();
 
     service = module.get<StorageService>(StorageService);
+    await service.onModuleInit();
+    mockSend.mockClear();
   });
 
   afterEach(() => {
@@ -77,6 +80,60 @@ describe('StorageService', () => {
       await service.onModuleInit();
 
       expect(mockSend).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('when storage is unavailable', () => {
+    let unavailableService: StorageService;
+
+    beforeEach(async () => {
+      mockSend.mockRejectedValue(new Error('ECONNREFUSED'));
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          StorageService,
+          { provide: ConfigService, useValue: mockConfigService },
+        ],
+      }).compile();
+
+      unavailableService = module.get<StorageService>(StorageService);
+      await unavailableService.onModuleInit();
+    });
+
+    it('should throw ServiceUnavailableException on upload', async () => {
+      await expect(
+        unavailableService.upload(
+          'k',
+          Buffer.from(''),
+          'application/pdf',
+          'f.pdf',
+        ),
+      ).rejects.toThrow(ServiceUnavailableException);
+    });
+
+    it('should throw ServiceUnavailableException on getSignedDownloadUrl', async () => {
+      await expect(
+        unavailableService.getSignedDownloadUrl('k'),
+      ).rejects.toThrow(ServiceUnavailableException);
+    });
+
+    it('should throw ServiceUnavailableException on delete', async () => {
+      await expect(unavailableService.delete('k')).rejects.toThrow(
+        ServiceUnavailableException,
+      );
+    });
+
+    it('should succeed after storage becomes available again', async () => {
+      mockSend.mockResolvedValue({});
+
+      const result = await unavailableService.upload(
+        'k',
+        Buffer.from('data'),
+        'application/pdf',
+        'f.pdf',
+      );
+
+      expect(result).toBe('k');
     });
   });
 

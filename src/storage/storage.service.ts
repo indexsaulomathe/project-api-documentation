@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   S3Client,
@@ -15,6 +20,7 @@ export class StorageService implements OnModuleInit {
   private readonly logger = new Logger(StorageService.name);
   private readonly client: S3Client;
   private readonly bucket: string;
+  private available = false;
 
   constructor(private readonly configService: ConfigService) {
     const endpoint = this.configService.getOrThrow<string>('MINIO_ENDPOINT');
@@ -40,7 +46,26 @@ export class StorageService implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    await this.ensureBucketExists();
+    try {
+      await this.ensureBucketExists();
+      this.available = true;
+    } catch (err) {
+      this.logger.error(
+        `Storage unavailable at startup: ${(err as Error).message}`,
+      );
+    }
+  }
+
+  private async assertAvailable(): Promise<void> {
+    if (!this.available) {
+      try {
+        await this.ensureBucketExists();
+        this.available = true;
+        this.logger.log('Storage reconnected successfully');
+      } catch {
+        throw new ServiceUnavailableException('Storage service is unavailable');
+      }
+    }
   }
 
   async upload(
@@ -49,6 +74,7 @@ export class StorageService implements OnModuleInit {
     contentType: string,
     originalName: string,
   ): Promise<string> {
+    await this.assertAvailable();
     await this.client.send(
       new PutObjectCommand({
         Bucket: this.bucket,
@@ -64,6 +90,7 @@ export class StorageService implements OnModuleInit {
   }
 
   async getSignedDownloadUrl(key: string, expiresIn = 3600): Promise<string> {
+    await this.assertAvailable();
     return getSignedUrl(
       this.client,
       new GetObjectCommand({ Bucket: this.bucket, Key: key }),
@@ -72,6 +99,7 @@ export class StorageService implements OnModuleInit {
   }
 
   async delete(key: string): Promise<void> {
+    await this.assertAvailable();
     await this.client.send(
       new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),
     );
