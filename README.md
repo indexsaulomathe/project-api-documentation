@@ -89,7 +89,7 @@ cd project-api-documentation
 
 cp .env.example .env
 
-# Start PostgreSQL (dev + test) and MinIO
+# Start PostgreSQL (dev + test)
 yarn docker:up:db
 
 yarn install
@@ -354,7 +354,7 @@ yarn format              # Prettier format
 
 # Docker
 yarn docker:up           # Start all services
-yarn docker:up:db        # Start databases + MinIO only
+yarn docker:up:db        # Start databases only (postgres + postgres-test)
 yarn docker:down         # Stop all services
 yarn docker:down:v       # Stop all services and remove volumes
 ```
@@ -422,6 +422,7 @@ src/
 ├── employee-document-types/ # Employee ↔ DocumentType linking
 ├── employees/               # Employee CRUD
 ├── health/                  # Health check endpoint
+├── users/                   # User entity and repository (used by Auth)
 ├── metrics/                 # Prometheus metrics (module, interceptor, controller)
 ├── pendencies/              # Pending documents query
 ├── statistics/              # Global statistics
