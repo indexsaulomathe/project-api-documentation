@@ -50,9 +50,9 @@ REST API for managing employee documentation — linking document types to emplo
 │  CorrelationIdMiddleware → Guards (JWT) → Controller            │
 │                                              │                  │
 │                                           Service               │
-│                                         ┌────┴────┐            │
-│                                    Repository   StorageService  │
-│                                         │           │           │
+│                                         ┌────┴────┐             │
+│                                TypeORM Repo     StorageService  │
+│                              (injected) │         │             │
 │                                     PostgreSQL    MinIO         │
 │                                                                 │
 │  ResponseInterceptor  ← wraps all success responses             │
@@ -65,7 +65,7 @@ REST API for managing employee documentation — linking document types to emplo
 
 ```
 Controller  → validates input (DTOs + pipes), delegates to Service
-Service     → business logic, repository calls, atomic transactions
+Service     → business logic, TypeORM repository calls (@InjectRepository), atomic transactions
 Entity      → TypeORM table mapping (no business logic)
 Filter      → exception → standardised error envelope
 Interceptor → success response → standardised success envelope
@@ -155,12 +155,20 @@ MINIO_USE_SSL=false
 
 # JWT
 JWT_SECRET=change-me-in-production
-JWT_EXPIRES_IN=15m
+JWT_EXPIRES_IN=30m
 JWT_REFRESH_SECRET=change-me-refresh-in-production
 JWT_REFRESH_EXPIRES_IN=7d
 
+# Rate limiting (TTL in milliseconds)
+THROTTLE_TTL=60000
+THROTTLE_LIMIT=1000
+THROTTLE_UPLOAD_TTL=60000
+THROTTLE_UPLOAD_LIMIT=50
+THROTTLE_AUTH_TTL=60000
+THROTTLE_AUTH_LIMIT=20
+
 # Observability
-METRICS_TOKEN=        # optional — if set, GET /api/metrics requires X-Metrics-Token header
+METRICS_TOKEN=        # optional — if set, GET /api/metrics requires metrics-token header
 GRAFANA_PASSWORD=admin
 ```
 
@@ -168,7 +176,7 @@ GRAFANA_PASSWORD=admin
 
 ## API Endpoints
 
-All routes are prefixed with `/api/v1`.
+All routes are prefixed with `/api/v1` except `/api/health` and `/api/metrics`.
 
 ### Auth
 
@@ -177,62 +185,75 @@ All routes are prefixed with `/api/v1`.
 | POST   | `/auth/register` | Public | Register a new user                            |
 | POST   | `/auth/login`    | Public | Login — returns `accessToken` + `refreshToken` |
 | POST   | `/auth/refresh`  | Public | Rotate refresh token                           |
-| POST   | `/auth/logout`   | Bearer | Invalidate refresh token                       |
+
+### Users
+
+| Method | Path               | Auth         | Description                        |
+| ------ | ------------------ | ------------ | ---------------------------------- |
+| GET    | `/users/me`        | Bearer       | Get current authenticated user     |
+| PATCH  | `/users/me`        | Bearer       | Update own email or password       |
+| GET    | `/users`           | Bearer/Admin | List all users (paginated)         |
+| GET    | `/users/:id`       | Bearer/Admin | Get user by ID                     |
+| PATCH  | `/users/:id/role`  | Bearer/Admin | Update user role                   |
+| DELETE | `/users/:id`       | Bearer/Admin | Soft-delete user                   |
 
 ### Employees
 
-| Method | Path             | Auth   | Description                            |
-| ------ | ---------------- | ------ | -------------------------------------- |
-| POST   | `/employees`     | Bearer | Create employee                        |
-| GET    | `/employees`     | Bearer | List employees (paginated, filterable) |
-| GET    | `/employees/:id` | Bearer | Get employee by ID                     |
-| PATCH  | `/employees/:id` | Bearer | Update employee                        |
-| DELETE | `/employees/:id` | Bearer | Soft-delete employee                   |
+| Method | Path             | Auth         | Description                            |
+| ------ | ---------------- | ------------ | -------------------------------------- |
+| POST   | `/employees`     | Bearer/Admin | Create employee                        |
+| GET    | `/employees`     | Bearer       | List employees (paginated, filterable) |
+| GET    | `/employees/:id` | Bearer       | Get employee by ID                     |
+| PATCH  | `/employees/:id` | Bearer/Admin | Update employee                        |
+| DELETE | `/employees/:id` | Bearer/Admin | Soft-delete employee                   |
 
 ### Document Types
 
-| Method | Path                  | Auth   | Description                     |
-| ------ | --------------------- | ------ | ------------------------------- |
-| POST   | `/document-types`     | Bearer | Create document type            |
-| GET    | `/document-types`     | Bearer | List document types (paginated) |
-| GET    | `/document-types/:id` | Bearer | Get document type by ID         |
-| PATCH  | `/document-types/:id` | Bearer | Update document type            |
-| DELETE | `/document-types/:id` | Bearer | Soft-delete document type       |
+| Method | Path                  | Auth         | Description                     |
+| ------ | --------------------- | ------------ | ------------------------------- |
+| POST   | `/document-types`     | Bearer/Admin | Create document type            |
+| GET    | `/document-types`     | Bearer       | List document types (paginated) |
+| GET    | `/document-types/:id` | Bearer       | Get document type by ID         |
+| PATCH  | `/document-types/:id` | Bearer/Admin | Update document type            |
+| DELETE | `/document-types/:id` | Bearer/Admin | Soft-delete document type       |
 
 ### Employee ↔ Document Type (linking)
 
-| Method | Path                                                    | Auth   | Description                                               |
-| ------ | ------------------------------------------------------- | ------ | --------------------------------------------------------- |
-| POST   | `/employees/:employeeId/document-types/:documentTypeId` | Bearer | Link document type to employee (creates pending document) |
-| DELETE | `/employees/:employeeId/document-types/:documentTypeId` | Bearer | Unlink (soft-deletes link + pending document)             |
+| Method | Path                                                    | Auth         | Description                                               |
+| ------ | ------------------------------------------------------- | ------------ | --------------------------------------------------------- |
+| POST   | `/employees/:employeeId/document-types`                 | Bearer/Admin | Link document type to employee (body: `documentTypeId`)   |
+| GET    | `/employees/:employeeId/document-types`                 | Bearer       | List document types linked to employee                    |
+| DELETE | `/employees/:employeeId/document-types/:documentTypeId` | Bearer/Admin | Unlink (soft-deletes link + pending documents)            |
 
 ### Documents
 
-| Method | Path                                                                       | Auth   | Description                                 |
-| ------ | -------------------------------------------------------------------------- | ------ | ------------------------------------------- |
-| POST   | `/employees/:employeeId/document-types/:documentTypeId/documents`          | Bearer | Upload document file (creates new version)  |
-| GET    | `/employees/:employeeId/document-types/:documentTypeId/documents/download` | Bearer | Get signed download URL for active document |
-| GET    | `/employees/:employeeId/document-types/:documentTypeId/documents/history`  | Bearer | Version history (paginated)                 |
-| GET    | `/employees/:employeeId/documents`                                         | Bearer | List all active documents for employee      |
+| Method | Path                                                          | Auth         | Description                                 |
+| ------ | ------------------------------------------------------------- | ------------ | ------------------------------------------- |
+| POST   | `/employees/:employeeId/documents/:documentTypeId`            | Bearer       | Upload document file (creates new version)  |
+| GET    | `/employees/:employeeId/documents`                            | Bearer       | List active documents for employee          |
+| GET    | `/employees/:employeeId/documents/:documentTypeId/download`   | Bearer       | Get signed download URL for active document |
+| GET    | `/employees/:employeeId/documents/:documentTypeId/history`    | Bearer       | Version history (paginated)                 |
 
 ### Pendencies
 
-| Method | Path          | Auth   | Description                                                |
-| ------ | ------------- | ------ | ---------------------------------------------------------- |
-| GET    | `/pendencies` | Bearer | Employees with at least one pending (unsubmitted) document |
+| Method | Path          | Auth         | Description                                                |
+| ------ | ------------- | ------------ | ---------------------------------------------------------- |
+| GET    | `/pendencies` | Bearer/Admin | Employees with at least one pending (unsubmitted) document |
 
 ### Statistics
 
-| Method | Path          | Auth   | Description                |
-| ------ | ------------- | ------ | -------------------------- |
-| GET    | `/statistics` | Bearer | Global document statistics |
+| Method | Path          | Auth         | Description                |
+| ------ | ------------- | ------------ | -------------------------- |
+| GET    | `/statistics` | Bearer/Admin | Global document statistics |
 
 ### System
 
-| Method | Path       | Auth           | Description                   |
-| ------ | ---------- | -------------- | ----------------------------- |
-| GET    | `/health`  | Public         | Health check (app + database) |
-| GET    | `/metrics` | Optional token | Prometheus metrics            |
+> These routes use the `/api` prefix directly (no version segment).
+
+| Method | Path           | Auth           | Description                   |
+| ------ | -------------- | -------------- | ----------------------------- |
+| GET    | `/api/health`  | Public         | Health check (app + database) |
+| GET    | `/api/metrics` | Optional token | Prometheus metrics            |
 
 ---
 
@@ -247,9 +268,6 @@ POST /auth/login
 
 POST /auth/refresh
   └─> new accessToken + new refreshToken (rotation)
-
-POST /auth/logout
-  └─> invalidates the current refreshToken
 ```
 
 In **Swagger UI**, click the **Authorize** button (top right) and paste your `accessToken` to authenticate all requests.
@@ -404,7 +422,7 @@ yarn docker:down:v       # Stop all services and remove volumes
 
 ```
 src/
-├── auth/                    # JWT authentication (register, login, refresh, logout)
+├── auth/                    # JWT authentication (register, login, refresh)
 ├── common/
 │   ├── dto/                 # Shared DTOs (PaginationDto)
 │   ├── entities/            # BaseEntity (uuid, createdAt, updatedAt, deletedAt)
@@ -422,7 +440,7 @@ src/
 ├── employee-document-types/ # Employee ↔ DocumentType linking
 ├── employees/               # Employee CRUD
 ├── health/                  # Health check endpoint
-├── users/                   # User entity and repository (used by Auth)
+├── users/                   # User CRUD (admin management + self-service profile)
 ├── metrics/                 # Prometheus metrics (module, interceptor, controller)
 ├── pendencies/              # Pending documents query
 ├── statistics/              # Global statistics
